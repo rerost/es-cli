@@ -31,7 +31,7 @@ func TestListIndex(t *testing.T) {
 	}
 	inOutPairs := []InOutPairs{
 		{
-			name: "When es return error",
+			name: "when es return error",
 			out: map[string]interface{}{
 				"error":   "map[message:test]",
 				"indices": []es.Index{},
@@ -40,6 +40,19 @@ func TestListIndex(t *testing.T) {
 {
 	"error": {
 		"message": "test"
+	}
+}`,
+		},
+		{
+			name: "when es return aliases",
+			out: map[string]interface{}{
+				"error":   "",
+				"indices": []es.Index{{Name: "test"}},
+			},
+			esResp: `
+{
+	"test": {
+		"aliases": {}
 	}
 }`,
 		},
@@ -63,8 +76,10 @@ func TestListIndex(t *testing.T) {
 			baseClient, _ := es.NewBaseClient(ctx, ts.Client())
 			indices, err := baseClient.ListIndex(ctx)
 
-			if diff := cmp.Diff(inOut.out["error"], err.Error()); diff != "" {
-				t.Errorf("Not mutch indices, diff(-want, +got) %s", diff)
+			if err != nil {
+				if diff := cmp.Diff(inOut.out["error"], err.Error()); diff != "" {
+					t.Errorf("Not mutch indices, diff(-want, +got) %s", diff)
+				}
 			}
 
 			if diff := cmp.Diff(inOut.out["indices"], indices); diff != "" {

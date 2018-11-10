@@ -118,21 +118,6 @@ func (client baseClientImp) ListIndex(ctx context.Context) ([]Index, error) {
 	}
 
 	if errMsg, ok := responseMap["error"]; ok {
-		// e.g. errMsg
-		// {
-		// 	"root_cause": [
-		// 		{
-		// 			"type": "invalid_index_name_exception",
-		// 			"reason": "Invalid index name [_aliase], must not start with '_'.",
-		// 			"index_uuid": "_na_",
-		// 			"index": "_aliase"
-		// 		}
-		// 	],
-		// 	"type": "invalid_index_name_exception",
-		// 	"reason": "Invalid index name [_aliase], must not start with '_'.",
-		// 	"index_uuid": "_na_",
-		// 	"index": "_aliase"
-		// },
 		return indices, fail.New(fmt.Sprintf("%v", errMsg))
 	}
 
