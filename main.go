@@ -36,11 +36,26 @@ func main() {
 		}
 		target := head
 
-		ctx = context.WithValue(ctx, setting.SettingKey("Host"), cliContext.String("host"))
-		ctx = context.WithValue(ctx, setting.SettingKey("Port"), cliContext.String("port"))
+		// Default Value
+		_host := cliContext.String("host")
+		if _host == "" {
+			_host = "http://localhost"
+		}
+		_port := cliContext.String("port")
+		if _port == "" {
+			_port = "9200"
+		}
+		_type := cliContext.String("host")
+		if _type == "" {
+			_type = "_doc"
+		}
+
+		ctx = context.WithValue(ctx, setting.SettingKey("Host"), _host)
+		ctx = context.WithValue(ctx, setting.SettingKey("Port"), _port)
+		ctx = context.WithValue(ctx, setting.SettingKey("Type"), _type)
+
 		ctx = context.WithValue(ctx, setting.SettingKey("User"), cliContext.String("user"))
 		ctx = context.WithValue(ctx, setting.SettingKey("Pass"), cliContext.String("pass"))
-		ctx = context.WithValue(ctx, setting.SettingKey("Type"), cliContext.String("type"))
 
 		esBaseClient, err := es.NewBaseClient(ctx, new(http.Client))
 		if err != nil {
