@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/rerost/es-cli/executer"
+	"github.com/rerost/es-cli/infra/es"
 	"github.com/rerost/es-cli/setting"
 	"github.com/srvc/fail"
 	"github.com/urfave/cli"
@@ -34,12 +36,17 @@ func main() {
 		}
 		target := head
 
-		ctx = context.WithValue(ctx, setting.SettingKey("host"), cliContext.String("host"))
-		ctx = context.WithValue(ctx, setting.SettingKey("port"), cliContext.String("port"))
-		ctx = context.WithValue(ctx, setting.SettingKey("basic-user"), cliContext.String("user"))
-		ctx = context.WithValue(ctx, setting.SettingKey("basic-pass"), cliContext.String("pass"))
+		ctx = context.WithValue(ctx, setting.SettingKey("Host"), cliContext.String("host"))
+		ctx = context.WithValue(ctx, setting.SettingKey("Port"), cliContext.String("port"))
+		ctx = context.WithValue(ctx, setting.SettingKey("User"), cliContext.String("user"))
+		ctx = context.WithValue(ctx, setting.SettingKey("Pass"), cliContext.String("pass"))
+		ctx = context.WithValue(ctx, setting.SettingKey("Type"), cliContext.String("type"))
 
-		e := executer.NewExecuter()
+		esBaseClient, err := es.NewBaseClient(ctx, new(http.Client))
+		if err != nil {
+			return err
+		}
+		e := executer.NewExecuter(esBaseClient)
 		result, err := e.Run(ctx, operation, target, args)
 		fmt.Fprintf(os.Stdout, result.String())
 		return err
@@ -52,6 +59,10 @@ func main() {
 		cli.StringFlag{
 			Name:  "port, p",
 			Usage: "ES port",
+		},
+		cli.StringFlag{
+			Name:  "type, t",
+			Usage: "Elasticsearch documents type",
 		},
 		cli.StringFlag{
 			Name:  "user, U",

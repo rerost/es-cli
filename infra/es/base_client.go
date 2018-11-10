@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/rerost/es-cli/setting"
@@ -18,6 +19,21 @@ import (
 type Index struct {
 	Name string
 }
+type Indices []Index
+
+func (i Index) String() string {
+	return i.Name
+}
+
+func (is Indices) String() string {
+	result := make([]string, len(is), len(is))
+	for i, index := range is {
+		result[i] = index.String()
+	}
+
+	return strings.Join(result, "\n")
+}
+
 type Mapping struct{}
 type Opt struct{}
 type Alias struct{}
@@ -29,7 +45,7 @@ type Version struct{}
 // Client is http wrapper
 type BaseClient interface {
 	// Index
-	ListIndex(ctx context.Context) ([]Index, error)
+	ListIndex(ctx context.Context) (Indices, error)
 	CreateIndex(ctx context.Context, indexName string, mappingJSON string) error
 	CopyIndex(ctx context.Context, srcIndexName string, dstIndexName string) error
 	DeleteIndex(ctx context.Context, indexName string) error
@@ -98,8 +114,8 @@ func NewBaseClient(ctx context.Context, httpClient *http.Client) (BaseClient, er
 	return client, nil
 }
 
-func (client baseClientImp) ListIndex(ctx context.Context) ([]Index, error) {
-	indices := []Index{}
+func (client baseClientImp) ListIndex(ctx context.Context) (Indices, error) {
+	indices := Indices{}
 	request, err := http.NewRequest(http.MethodGet, client.listIndexURL(), bytes.NewBufferString(""))
 	if err != nil {
 		return indices, fail.Wrap(err)
@@ -126,10 +142,11 @@ func (client baseClientImp) ListIndex(ctx context.Context) ([]Index, error) {
 		return indices, fail.New(fmt.Sprintf("%v", errMsg))
 	}
 
-	indices = make([]Index, len(responseMap), len(responseMap))
+	indices = make(Indices, len(responseMap), len(responseMap))
 	i := 0
 	for indexName := range responseMap {
 		indices[i] = Index{Name: indexName}
+		i++
 	}
 	return indices, nil
 }
@@ -182,6 +199,8 @@ func (client baseClientImp) CopyIndex(ctx context.Context, srcIndexName string, 
 	if client.User.Valid && client.Pass.Valid {
 		request.SetBasicAuth(client.User.String, client.Pass.String)
 	}
+	request.Header.Add("Content-Type", "application/json")
+	request = addParams(request, map[string]string{"wait_for_completion": "false"})
 
 	response, err := client.HttpClient.Do(request)
 	if err != nil {
@@ -202,16 +221,16 @@ func (client baseClientImp) CopyIndex(ctx context.Context, srcIndexName string, 
 	}
 
 	if _, ok := responseMap["task"].(string); !ok {
-		return fail.New(fmt.Sprintf("Not found task: %v", responseBody))
+		return fail.New(fmt.Sprintf("Not found task: %v", string(responseBody)))
 	}
 
 	taskID := responseMap["task"].(string)
-	fmt.Fprintf(os.Stdout, "TaskID is %s", taskID)
+	fmt.Fprintf(os.Stdout, "TaskID is %s\n", taskID)
 
 	for i := 1; ; i++ {
 		// Back off
 		time.Sleep(time.Second * time.Duration(i*i))
-		fmt.Fprintf(os.Stdout, "Waiting for complete copy...")
+		fmt.Fprintf(os.Stdout, "Waiting for complete copy...\n")
 		task, err := client.GetTask(ctx, taskID)
 
 		if err != nil {
@@ -222,6 +241,8 @@ func (client baseClientImp) CopyIndex(ctx context.Context, srcIndexName string, 
 			break
 		}
 	}
+
+	// TODO Check count
 
 	return nil
 }
@@ -283,7 +304,38 @@ func (client baseClientImp) ListTask(ctx context.Context) ([]Task, error) {
 	return []Task{}, nil
 }
 func (client baseClientImp) GetTask(ctx context.Context, taskID string) (Task, error) {
-	return Task{}, nil
+	request, err := http.NewRequest(http.MethodGet, client.taskURL(taskID), bytes.NewBufferString(""))
+	if err != nil {
+		return Task{}, fail.Wrap(err)
+	}
+
+	if client.User.Valid && client.Pass.Valid {
+		request.SetBasicAuth(client.User.String, client.Pass.String)
+	}
+
+	response, err := client.HttpClient.Do(request)
+	if err != nil {
+		return Task{}, fail.Wrap(err)
+	}
+	defer response.Body.Close()
+
+	responseMap := map[string]interface{}{}
+
+	responseBody, err := ioutil.ReadAll(response.Body)
+	err = json.Unmarshal(responseBody, &responseMap)
+	if err != nil {
+		return Task{}, fail.Wrap(err)
+	}
+
+	if errMsg, ok := responseMap["error"]; ok {
+		return Task{}, fail.New(fmt.Sprintf("%v", errMsg))
+	}
+
+	if _, ok := responseMap["completed"].(bool); !ok {
+		return Task{}, fail.New(fmt.Sprintf("Failed to extract completed from resposne"))
+	}
+
+	return Task{Complete: responseMap["completed"].(bool)}, nil
 }
 
 // Util
@@ -305,4 +357,21 @@ func (client baseClientImp) indexURL(indexName string) string {
 }
 func (client baseClientImp) reindexURL() string {
 	return client.baseURL() + "/_reindex"
+}
+func (client baseClientImp) tasksURL() string {
+	return client.baseURL() + "/_tasks"
+}
+
+func (client baseClientImp) taskURL(taskID string) string {
+	return client.tasksURL() + "/" + taskID
+}
+
+func addParams(req *http.Request, params map[string]string) *http.Request {
+	q := req.URL.Query()
+	for k, v := range params {
+		q.Add(k, v)
+	}
+
+	req.URL.RawQuery = q.Encode()
+	return req
 }
