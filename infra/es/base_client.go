@@ -1,11 +1,16 @@
 package es
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/rerost/es-cli/setting"
 	"github.com/srvc/fail"
+	"gopkg.in/guregu/null.v3"
 )
 
 type Index struct {
@@ -20,7 +25,7 @@ type Version struct{}
 // Client is http wrapper
 type BaseClient interface {
 	// Index
-	ListIndex(ctx context.Context, indexName string) ([]Index, error)
+	ListIndex(ctx context.Context) ([]Index, error)
 	CreateIndex(ctx context.Context, indexName string, mappingJSON string) error
 	CopyIndex(ctx context.Context, srcIndexName string, dstIndexName string) error
 	DeleteIndex(ctx context.Context, indexName string) error
@@ -48,12 +53,14 @@ type baseClientImp struct {
 	Host       string
 	Port       string
 	Type       string
-	httpClient http.Client
+	User       null.String
+	Pass       null.String
+	HttpClient *http.Client
 }
 
-func NewBaseClient(ctx context.Context, httpClient http.Client) (BaseClient, error) {
+func NewBaseClient(ctx context.Context, httpClient *http.Client) (BaseClient, error) {
 	client := baseClientImp{}
-	client.httpClient = httpClient
+	client.HttpClient = httpClient
 
 	_host, ok := ctx.Value(setting.SettingKey("Host")).(string)
 	if !ok {
@@ -74,11 +81,67 @@ func NewBaseClient(ctx context.Context, httpClient http.Client) (BaseClient, err
 	client.Port = _port
 	client.Type = _type
 
+	_user, ok := ctx.Value(setting.SettingKey("User")).(string)
+	if ok {
+		client.User = null.StringFrom(_user)
+	}
+
+	_pass, ok := ctx.Value(setting.SettingKey("Pass")).(string)
+	if ok {
+		client.Pass = null.StringFrom(_pass)
+	}
+
 	return client, nil
 }
 
-func (client baseClientImp) ListIndex(ctx context.Context, indexName string) ([]Index, error) {
-	return []Index{}, nil
+func (client baseClientImp) ListIndex(ctx context.Context) ([]Index, error) {
+	indices := []Index{}
+	request, err := http.NewRequest(http.MethodGet, client.listIndexURL(), bytes.NewBufferString(""))
+	if err != nil {
+		return indices, err
+	}
+
+	if client.User.Valid && client.Pass.Valid {
+		request.SetBasicAuth(client.User.String, client.Pass.String)
+	}
+
+	response, err := client.HttpClient.Do(request)
+	if err != nil {
+		return indices, err
+	}
+	responseMap := map[string]interface{}{}
+
+	responseBody, err := ioutil.ReadAll(response.Body)
+	err = json.Unmarshal(responseBody, &responseMap)
+	if err != nil {
+		return indices, err
+	}
+
+	if errMsg, ok := responseMap["error"]; ok {
+		// e.g. errMsg
+		// {
+		// 	"root_cause": [
+		// 		{
+		// 			"type": "invalid_index_name_exception",
+		// 			"reason": "Invalid index name [_aliase], must not start with '_'.",
+		// 			"index_uuid": "_na_",
+		// 			"index": "_aliase"
+		// 		}
+		// 	],
+		// 	"type": "invalid_index_name_exception",
+		// 	"reason": "Invalid index name [_aliase], must not start with '_'.",
+		// 	"index_uuid": "_na_",
+		// 	"index": "_aliase"
+		// },
+		return indices, fail.New(fmt.Sprintf("%v", errMsg))
+	}
+
+	indices = make([]Index, len(responseMap), len(responseMap))
+	i := 0
+	for indexName := range responseMap {
+		indices[i] = Index{Name: indexName}
+	}
+	return indices, nil
 }
 func (client baseClientImp) CreateIndex(ctx context.Context, indexName string, mappingJSON string) error {
 	return nil
@@ -126,4 +189,12 @@ func (client baseClientImp) Version(ctx context.Context) (Version, error) {
 }
 func (client baseClientImp) Ping(ctx context.Context) (bool, error) {
 	return false, nil
+}
+
+func (client baseClientImp) baseURL() string {
+	return client.Host + ":" + client.Port
+}
+
+func (client baseClientImp) listIndexURL() string {
+	return client.baseURL() + "/_aliases"
 }
