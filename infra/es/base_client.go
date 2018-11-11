@@ -7,9 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
-	"time"
 
 	"github.com/rerost/es-cli/setting"
 	"github.com/srvc/fail"
@@ -43,11 +41,12 @@ func (m Mapping) String() string {
 type Opt struct{}
 type Alias struct{}
 type Task struct {
+	ID       string
 	Complete bool
 }
 
 func (t Task) String() string {
-	return fmt.Sprintf("%v", t.Complete)
+	return fmt.Sprintf("ID: %s, Complete: %v", t.ID, t.Complete)
 }
 
 type Tasks []Task
@@ -61,6 +60,14 @@ func (ts Tasks) String() string {
 	return strings.Join(result, "\n")
 }
 
+type Count struct {
+	Num int64
+}
+
+func (c Count) String() string {
+	return fmt.Sprintf("%d", c.Num)
+}
+
 type Version struct{}
 
 // Client is http wrapper
@@ -68,8 +75,9 @@ type BaseClient interface {
 	// Index
 	ListIndex(ctx context.Context) (Indices, error)
 	CreateIndex(ctx context.Context, indexName string, mappingJSON string) error
-	CopyIndex(ctx context.Context, srcIndexName string, dstIndexName string) error
+	CopyIndex(ctx context.Context, srcIndexName string, dstIndexName string) (Task, error)
 	DeleteIndex(ctx context.Context, indexName string) error
+	CountIndex(ctx context.Context, indexName string) (Count, error)
 
 	// Mapping
 	GetMapping(ctx context.Context, indexOrAliasName string) (Mapping, error)
@@ -201,7 +209,7 @@ func (client baseClientImp) CreateIndex(ctx context.Context, indexName string, m
 
 	return nil
 }
-func (client baseClientImp) CopyIndex(ctx context.Context, srcIndexName string, dstIndexName string) error {
+func (client baseClientImp) CopyIndex(ctx context.Context, srcIndexName string, dstIndexName string) (Task, error) {
 	reindexJSON := fmt.Sprintf(`
 {
 	"source": {
@@ -214,7 +222,7 @@ func (client baseClientImp) CopyIndex(ctx context.Context, srcIndexName string, 
 	`, srcIndexName, dstIndexName)
 	request, err := http.NewRequest(http.MethodPost, client.reindexURL(), bytes.NewBufferString(reindexJSON))
 	if err != nil {
-		return fail.Wrap(err)
+		return Task{}, fail.Wrap(err)
 	}
 
 	if client.User.Valid && client.Pass.Valid {
@@ -225,7 +233,7 @@ func (client baseClientImp) CopyIndex(ctx context.Context, srcIndexName string, 
 
 	response, err := client.HttpClient.Do(request)
 	if err != nil {
-		return fail.Wrap(err)
+		return Task{}, fail.Wrap(err)
 	}
 	defer response.Body.Close()
 
@@ -234,41 +242,23 @@ func (client baseClientImp) CopyIndex(ctx context.Context, srcIndexName string, 
 	responseBody, err := ioutil.ReadAll(response.Body)
 	err = json.Unmarshal(responseBody, &responseMap)
 	if err != nil {
-		return fail.Wrap(err)
+		return Task{}, fail.Wrap(err)
 	}
 
 	if errMsg, ok := responseMap["error"]; ok {
-		return fail.New(fmt.Sprintf("%v", errMsg))
+		return Task{}, fail.New(fmt.Sprintf("%v", errMsg))
 	}
 
 	if _, ok := responseMap["task"].(string); !ok {
-		return fail.New(fmt.Sprintf("Not found task: %v", string(responseBody)))
+		return Task{}, fail.New(fmt.Sprintf("Not found task: %v", string(responseBody)))
 	}
 
 	taskID := responseMap["task"].(string)
-	fmt.Fprintf(os.Stdout, "TaskID is %s\n", taskID)
 
-	for i := 1; ; i++ {
-		// Back off
-		time.Sleep(time.Second * time.Duration(i*i))
-		fmt.Fprintf(os.Stdout, "Waiting for complete copy...\n")
-		task, err := client.GetTask(ctx, taskID)
-
-		if err != nil {
-			return fail.Wrap(err)
-		}
-
-		if task.Complete == true {
-			break
-		}
-	}
-
-	// TODO Check count
-
-	return nil
+	return Task{ID: taskID}, nil
 }
 func (client baseClientImp) DeleteIndex(ctx context.Context, indexName string) error {
-	request, err := http.NewRequest(http.MethodDelete, client.indexURL(indexName), bytes.NewBufferString(""))
+	request, err := http.NewRequest(http.MethodDelete, client.rawIndexURL(indexName), bytes.NewBufferString(""))
 	if err != nil {
 		return fail.Wrap(err)
 	}
@@ -296,6 +286,40 @@ func (client baseClientImp) DeleteIndex(ctx context.Context, indexName string) e
 	}
 
 	return nil
+}
+func (client baseClientImp) CountIndex(ctx context.Context, indexName string) (Count, error) {
+	request, err := http.NewRequest(http.MethodGet, client.countURL(indexName), bytes.NewBufferString(""))
+	if err != nil {
+		return Count{}, fail.Wrap(err)
+	}
+
+	if client.User.Valid && client.Pass.Valid {
+		request.SetBasicAuth(client.User.String, client.Pass.String)
+	}
+
+	response, err := client.HttpClient.Do(request)
+	if err != nil {
+		return Count{}, fail.Wrap(err)
+	}
+	defer response.Body.Close()
+
+	responseMap := map[string]interface{}{}
+
+	responseBody, err := ioutil.ReadAll(response.Body)
+	err = json.Unmarshal(responseBody, &responseMap)
+	if err != nil {
+		return Count{}, fail.Wrap(err)
+	}
+
+	if errMsg, ok := responseMap["error"]; ok {
+		return Count{}, fail.New(fmt.Sprintf("%v", errMsg))
+	}
+
+	if _, ok := responseMap["count"].(float64); !ok {
+		return Count{}, fail.New(fmt.Sprintf("Failed to extract count from json: %s", responseBody))
+	}
+
+	return Count{Num: int64(responseMap["count"].(float64))}, nil
 }
 
 // Mapping
@@ -586,6 +610,9 @@ func (client baseClientImp) listIndexURL() string {
 func (client baseClientImp) indexURL(indexName string) string {
 	return client.baseURL() + "/" + indexName + "/" + client.Type
 }
+func (client baseClientImp) rawIndexURL(indexName string) string {
+	return client.baseURL() + "/" + indexName
+}
 func (client baseClientImp) reindexURL() string {
 	return client.baseURL() + "/_reindex"
 }
@@ -600,6 +627,9 @@ func (client baseClientImp) mappingURL(indexOrAliasName string) string {
 }
 func (client baseClientImp) aliasURL() string {
 	return client.baseURL() + "/_aliases"
+}
+func (client baseClientImp) countURL(indexName string) string {
+	return client.indexURL(indexName) + "/_count"
 }
 
 func addParams(req *http.Request, params map[string]string) *http.Request {
