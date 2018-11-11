@@ -33,6 +33,10 @@ exec_only()
   echo "# get mapping"
   eval "${cmd} create index test '{}'" > /dev/null
   eval "${cmd} get mapping test" > /dev/null
+  echo "# update mapping"
+  eval "${cmd} create index test '{}'" > /dev/null
+  eval "${cmd} add alias alias_test test" > /dev/null
+  eval "${cmd} update mapping alias_test '{}'" > /dev/null
 
   ## Alias
   echo "# create alias"
