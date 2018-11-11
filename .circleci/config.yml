@@ -23,9 +23,6 @@ jobs:
     working_directory: /go/src/github.com/rerost/es-cli
     requires:
       - test
-    filters:
-      branches:
-        only: /^v\d+\.\d+\.\d+$/
     steps:
       - checkout
       - run: GOOS=linux   GOARCH=amd64 make build
@@ -43,3 +40,6 @@ workflows:
       - build
       - test
       - release
+        filters:
+          branches:
+            only: /^v\d+\.\d+\.\d+$/
