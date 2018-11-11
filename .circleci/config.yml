@@ -9,7 +9,12 @@ jobs:
     working_directory: /go/src/github.com/rerost/es-cli
     steps:
       - checkout
-      - run: make build
+      - run: GOOS=linux   GOARCH=amd64 make build
+      - run: GOOS=windows GOARCH=amd64 make build
+      - run: GOOS=darwin  GOARCH=amd64 make build
+      - run: GOOS=linux   GOARCH=386   make build
+      - run: GOOS=windows GOARCH=386   make build
+      - run: GOOS=darwin  GOARCH=386   make build
   test:
     docker:
       - image: circleci/golang:1.11

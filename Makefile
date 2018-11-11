@@ -27,7 +27,11 @@ clear:
 ## Use this in CI
 PHONY: build
 build: vendor
-	go build -o bin/es-cli .
+ifdef GOOS
+	go build -o es-cli-$(GOOS)-$(GOARCH) $ .
+else
+	go build .
+endif
 
 PHONY: test
 test: go-test e2e-test
