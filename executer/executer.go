@@ -20,6 +20,31 @@ type Executer interface {
 }
 
 type Empty struct{}
+type Command struct {
+	ArgLen  int
+	ArgType ArgTypes
+}
+
+type ArgTypes int
+
+const (
+	EXACT ArgTypes = iota
+	MORE
+)
+
+func (c Command) Validate(args Args) error {
+	if c.ArgType == EXACT {
+		if len(args) != c.ArgLen {
+			return fail.Wrap(fail.New(fmt.Sprintf("Invalid arguments expected: %d, %v", c.ArgLen, args)), fail.WithCode("Invalid arguments"))
+		}
+	}
+	if c.ArgType == MORE {
+		if !(len(args) >= c.ArgLen) {
+			return fail.Wrap(fail.New(fmt.Sprintf("Invalid arguments expected: %d, %v", c.ArgLen, args)), fail.WithCode("Invalid arguments"))
+		}
+	}
+	return nil
+}
 
 func (e Empty) String() string {
 	return ""
@@ -33,26 +58,49 @@ func NewExecuter(esBaseClient es.BaseClient) Executer {
 	return &executerImp{esBaseClient: esBaseClient}
 }
 
+var CommandMap map[string]map[string]Command
+
+func init() {
+	CommandMap = map[string]map[string]Command{
+		"index": {
+			"list":   Command{ArgLen: 0, ArgType: EXACT},
+			"create": Command{ArgLen: 2, ArgType: EXACT},
+			"delete": Command{ArgLen: 1, ArgType: EXACT},
+			"copy":   Command{ArgLen: 2, ArgType: EXACT},
+			"count":  Command{ArgLen: 1, ArgType: EXACT},
+		},
+		"mapping": {
+			"get": Command{ArgLen: 1, ArgType: EXACT},
+		},
+		"alias": {
+			"create": Command{ArgLen: 2, ArgType: EXACT},
+			"drop":   Command{ArgLen: 2, ArgType: EXACT},
+			"add":    Command{ArgLen: 2, ArgType: MORE},
+			"remove": Command{ArgLen: 2, ArgType: MORE},
+		},
+		"task": {
+			"list": Command{ArgLen: 0, ArgType: EXACT},
+			"get":  Command{ArgLen: 1, ArgType: EXACT},
+		},
+	}
+}
+
 func (e *executerImp) Run(ctx context.Context, operation string, target string, args Args) (Result, error) {
+	if c, ok := CommandMap[target][operation]; !ok {
+		return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid target and operation %v %v", operation, target)), fail.WithCode("Invalid arguments"))
+	} else if err := c.Validate(args); err != nil {
+		return Empty{}, err
+	}
+
 	if target == "index" {
 		switch operation {
 		case "list":
 			return e.esBaseClient.ListIndex(ctx)
 		case "create":
-			if len(args) != 2 {
-				return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid arguments expected: %d, %v", 2, args)), fail.WithCode("Invalid arguments"))
-			}
 			return Empty{}, e.esBaseClient.CreateIndex(ctx, args[0], args[1])
 		case "delete":
-			if len(args) != 1 {
-				return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid arguments expected: %d, %v", 1, args)), fail.WithCode("Invalid arguments"))
-			}
 			return Empty{}, e.esBaseClient.DeleteIndex(ctx, args[0])
 		case "copy":
-			if len(args) != 2 {
-				return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid arguments expected: %d, %v", 2, args)), fail.WithCode("Invalid arguments"))
-			}
-
 			task, err := e.esBaseClient.CopyIndex(ctx, args[0], args[1])
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
@@ -89,9 +137,6 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 
 			return Empty{}, nil
 		case "count":
-			if len(args) != 1 {
-				return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid arguments expected: %d, %v", 1, args)), fail.WithCode("Invalid arguments"))
-			}
 			return e.esBaseClient.CountIndex(ctx, args[0])
 		default:
 			return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid operation: %v", operation)), fail.WithCode("Invalid arguments"))
@@ -101,9 +146,6 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 	if target == "mapping" {
 		switch operation {
 		case "get":
-			if len(args) != 1 {
-				return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid arguments expected: %d, %v", 1, args)), fail.WithCode("Invalid arguments"))
-			}
 			return e.esBaseClient.GetMapping(ctx, args[0])
 		default:
 			return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid operation: %v", operation)), fail.WithCode("Invalid arguments"))
@@ -113,26 +155,14 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 	if target == "alias" {
 		switch operation {
 		case "create":
-			if len(args) != 2 {
-				return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid arguments expected: %d, %v", 2, args)), fail.WithCode("Invalid arguments"))
-			}
 			return Empty{}, e.esBaseClient.CreateAlias(ctx, args[0], args[1])
 		case "drop":
-			if len(args) != 2 {
-				return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid arguments expected: %d, %v", 2, args)), fail.WithCode("Invalid arguments"))
-			}
 			// TODO implement
 			return Empty{}, nil
 			// return Empty{}, e.esBaseClient.DropAlias(ctx, args[0], args[1])
 		case "add":
-			if len(args) < 2 {
-				return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid arguments expected: %d, %v", 2, args)), fail.WithCode("Invalid arguments"))
-			}
-			return Empty{}, e.esBaseClient.AddAlias(ctx, args[0], args[1])
+			return Empty{}, e.esBaseClient.AddAlias(ctx, args[0], args[1:]...)
 		case "remove":
-			if len(args) < 2 {
-				return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid arguments expected: >= %d, %v", 2, args)), fail.WithCode("Invalid arguments"))
-			}
 			return Empty{}, e.esBaseClient.RemoveAlias(ctx, args[0], args[1:]...)
 		default:
 			return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid operation: %v", operation)), fail.WithCode("Invalid arguments"))
@@ -142,14 +172,8 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 	if target == "task" {
 		switch operation {
 		case "list":
-			if len(args) != 0 {
-				return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid arguments expected: %d, %v", 0, args)), fail.WithCode("Invalid arguments"))
-			}
 			return e.esBaseClient.ListTask(ctx)
 		case "get":
-			if len(args) != 1 {
-				return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid arguments expected: %d, %v", 1, args)), fail.WithCode("Invalid arguments"))
-			}
 			return e.esBaseClient.GetTask(ctx, args[0])
 		default:
 			return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid operation: %v", operation)), fail.WithCode("Invalid arguments"))
