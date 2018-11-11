@@ -106,7 +106,7 @@ func main() {
 		e := executer.NewExecuter(esBaseClient)
 		result, err := e.Run(ctx, operation, target, args)
 
-		if fail.Unwrap(err).Code == "Invalid arguments" {
+		if err != nil && fail.Unwrap(err).Code == "Invalid arguments" {
 			cli.ShowAppHelp(cliContext)
 		}
 		fmt.Fprintf(os.Stdout, result.String())
