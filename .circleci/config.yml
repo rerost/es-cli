@@ -21,8 +21,6 @@ jobs:
     docker:
       - image: circleci/golang:1.11
     working_directory: /go/src/github.com/rerost/es-cli
-    requires:
-      - test
     steps:
       - checkout
       - run: GOOS=linux   GOARCH=amd64 make build
@@ -38,8 +36,13 @@ workflows:
   build_and_test:
     jobs:
       - build
-      - test
-      - release
-        filters:
-          branches:
-            only: /^v\d+\.\d+\.\d+$/
+      - test:
+          requires:
+            - build
+      - release:
+          requires:
+            - build
+            - test
+          filters:
+            branches:
+              only: /^v\d+\.\d+\.\d+$/
