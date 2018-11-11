@@ -2,6 +2,7 @@ package executer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -70,7 +71,8 @@ func init() {
 			"count":  Command{ArgLen: 1, ArgType: EXACT},
 		},
 		"mapping": {
-			"get": Command{ArgLen: 1, ArgType: EXACT},
+			"get":    Command{ArgLen: 1, ArgType: EXACT},
+			"update": Command{ArgLen: 2, ArgType: EXACT},
 		},
 		"alias": {
 			"create": Command{ArgLen: 2, ArgType: EXACT},
@@ -147,6 +149,53 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 		switch operation {
 		case "get":
 			return e.esBaseClient.GetMapping(ctx, args[0])
+		case "update":
+			// Thinking only alias case
+			// Rethink when index
+			// TODO think index case
+			aliasName := args[0]
+			mappingJSON := args[1]
+
+			mapping, err := e.esBaseClient.GetMapping(ctx, args[0])
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+			indexMappings := map[string]interface{}{}
+			err = json.Unmarshal([]byte(mapping), &indexMappings)
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+			if len(indexMappings) != 1 {
+				return Empty{}, fail.New("Support only 1-alias 1-index case")
+			}
+
+			var oldIndexName string
+			for k := range indexMappings {
+				oldIndexName = k
+			}
+
+			newIndexName := aliasName + time.Now().Format("_20060102_150405")
+			err = e.esBaseClient.CreateIndex(ctx, newIndexName, mappingJSON)
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+			_, err = e.Run(ctx, "copy", "index", []string{oldIndexName, newIndexName})
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+			err = e.esBaseClient.AddAlias(ctx, aliasName, newIndexName)
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+			err = e.esBaseClient.RemoveAlias(ctx, aliasName, oldIndexName)
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+			err = e.esBaseClient.DeleteIndex(ctx, oldIndexName)
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+			return Empty{}, nil
 		default:
 			return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid operation: %v", operation)), fail.WithCode("Invalid arguments"))
 		}
