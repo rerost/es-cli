@@ -88,6 +88,11 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 			fmt.Fprintf(os.Stdout, "Done copy")
 
 			return Empty{}, nil
+		case "count":
+			if len(args) != 1 {
+				return Empty{}, fail.New(fmt.Sprintf("Invalid arguments expected: %d, %v", 1, args))
+			}
+			return e.esBaseClient.CountIndex(ctx, args[0])
 		}
 	}
 

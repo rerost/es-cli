@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/rerost/es-cli/setting"
@@ -316,15 +315,11 @@ func (client baseClientImp) CountIndex(ctx context.Context, indexName string) (C
 		return Count{}, fail.New(fmt.Sprintf("%v", errMsg))
 	}
 
-	if _, ok := responseMap["count"].(string); !ok {
+	if _, ok := responseMap["count"].(float64); !ok {
 		return Count{}, fail.New(fmt.Sprintf("Failed to extract count from json: %s", responseBody))
 	}
 
-	countNum, err := strconv.ParseInt(responseMap["count"].(string), 10, 64)
-	if err != nil {
-		return Count{}, fail.Wrap(err)
-	}
-	return Count{Num: countNum}, nil
+	return Count{Num: int64(responseMap["count"].(float64))}, nil
 }
 
 // Mapping
@@ -634,7 +629,7 @@ func (client baseClientImp) aliasURL() string {
 	return client.baseURL() + "/_aliases"
 }
 func (client baseClientImp) countURL(indexName string) string {
-	return client.indexURL(indexName) + "/count"
+	return client.indexURL(indexName) + "/_count"
 }
 
 func addParams(req *http.Request, params map[string]string) *http.Request {
