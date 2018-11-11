@@ -199,7 +199,6 @@ func (client baseClientImp) CreateIndex(ctx context.Context, indexName string, m
 	responseMap := map[string]interface{}{}
 
 	responseBody, err := ioutil.ReadAll(response.Body)
-	fmt.Println(responseBody)
 	err = json.Unmarshal(responseBody, &responseMap)
 	if err != nil {
 		return fail.Wrap(err)

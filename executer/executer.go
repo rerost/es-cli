@@ -161,7 +161,7 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 				return Empty{}, fail.Wrap(err)
 			}
 			indexMappings := map[string]interface{}{}
-			err = json.Unmarshal([]byte(mapping), &indexMappings)
+			err = json.Unmarshal([]byte(mapping.String()), &indexMappings)
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
