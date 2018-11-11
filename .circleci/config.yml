@@ -25,12 +25,9 @@ jobs:
       - test
     filters:
       branches:
-        ignore: /.*/
-      tags:
         only: /^v\d+\.\d+\.\d+$/
     steps:
       - checkout
-      - run: make test
       - run: GOOS=linux   GOARCH=amd64 make build
       - run: GOOS=windows GOARCH=amd64 make build
       - run: GOOS=darwin  GOARCH=amd64 make build
