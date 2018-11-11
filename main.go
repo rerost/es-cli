@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 
@@ -37,25 +39,46 @@ func main() {
 		target := head
 
 		// Default Value
+		ctx = context.WithValue(ctx, setting.SettingKey("host"), "http://localhost")
+		ctx = context.WithValue(ctx, setting.SettingKey("port"), "9200")
+		ctx = context.WithValue(ctx, setting.SettingKey("type"), "_doc")
+		ctx = context.WithValue(ctx, setting.SettingKey("user"), "")
+		ctx = context.WithValue(ctx, setting.SettingKey("pass"), "")
+
+		// Config file
+		if f, err := ioutil.ReadFile(".escli.json"); err == nil {
+			configMap := map[string]string{}
+			err = json.Unmarshal(f, &configMap)
+			if err != nil {
+				return fail.Wrap(err)
+			}
+
+			for k, v := range configMap {
+				ctx = context.WithValue(ctx, setting.SettingKey(k), v)
+			}
+		}
+
+		// Params
 		_host := cliContext.String("host")
-		if _host == "" {
-			_host = "http://localhost"
+		if _host != "" {
+			ctx = context.WithValue(ctx, setting.SettingKey("host"), _host)
 		}
 		_port := cliContext.String("port")
-		if _port == "" {
-			_port = "9200"
+		if _port != "" {
+			ctx = context.WithValue(ctx, setting.SettingKey("port"), _port)
 		}
-		_type := cliContext.String("host")
-		if _type == "" {
-			_type = "_doc"
+		_type := cliContext.String("type")
+		if _type != "" {
+			ctx = context.WithValue(ctx, setting.SettingKey("type"), _type)
 		}
-
-		ctx = context.WithValue(ctx, setting.SettingKey("Host"), _host)
-		ctx = context.WithValue(ctx, setting.SettingKey("Port"), _port)
-		ctx = context.WithValue(ctx, setting.SettingKey("Type"), _type)
-
-		ctx = context.WithValue(ctx, setting.SettingKey("User"), cliContext.String("user"))
-		ctx = context.WithValue(ctx, setting.SettingKey("Pass"), cliContext.String("pass"))
+		_user := cliContext.String("user")
+		if _user != "" {
+			ctx = context.WithValue(ctx, setting.SettingKey("user"), _user)
+		}
+		_pass := cliContext.String("pass")
+		if _pass != "" {
+			ctx = context.WithValue(ctx, setting.SettingKey("pass"), cliContext.String("pass"))
+		}
 
 		esBaseClient, err := es.NewBaseClient(ctx, new(http.Client))
 		if err != nil {
