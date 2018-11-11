@@ -34,7 +34,7 @@ func TestListIndex(t *testing.T) {
 			name: "when es return error",
 			out: map[string]interface{}{
 				"error":   "map[message:test]",
-				"indices": []es.Index{},
+				"indices": es.Indices{},
 			},
 			esResp: `
 {
@@ -47,7 +47,7 @@ func TestListIndex(t *testing.T) {
 			name: "when es return aliases",
 			out: map[string]interface{}{
 				"error":   "",
-				"indices": []es.Index{{Name: "test"}},
+				"indices": es.Indices{{Name: "test"}},
 			},
 			esResp: `
 {
@@ -82,7 +82,7 @@ func TestListIndex(t *testing.T) {
 				}
 			}
 
-			if diff := cmp.Diff(inOut.out["indices"], indices); diff != "" {
+			if diff := cmp.Diff(inOut.out["indices"].(es.Indices), indices); diff != "" {
 				t.Errorf("Not mutch indices, diff(-want, +got) %s", diff)
 			}
 		})
