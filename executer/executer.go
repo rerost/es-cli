@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"time"
 
@@ -31,6 +32,7 @@ type ArgTypes int
 const (
 	EXACT ArgTypes = iota
 	MORE
+	STDIN
 )
 
 func (c Command) Validate(args Args) error {
@@ -41,7 +43,13 @@ func (c Command) Validate(args Args) error {
 	}
 	if c.ArgType == MORE {
 		if !(len(args) >= c.ArgLen) {
-			return fail.Wrap(fail.New(fmt.Sprintf("Invalid arguments expected: %d, %v", c.ArgLen, args)), fail.WithCode("Invalid arguments"))
+			return fail.Wrap(fail.New(fmt.Sprintf("Invalid arguments more than: %d, %v", c.ArgLen, args)), fail.WithCode("Invalid arguments"))
+		}
+	}
+	if c.ArgType == STDIN {
+		// Stdin
+		if !(len(args) == c.ArgLen-1 || len(args) == c.ArgLen) {
+			return fail.Wrap(fail.New(fmt.Sprintf("Invalid arguments less or much: %d, %v", c.ArgLen, args)), fail.WithCode("Invalid arguments"))
 		}
 	}
 	return nil
@@ -65,14 +73,14 @@ func init() {
 	CommandMap = map[string]map[string]Command{
 		"index": {
 			"list":   Command{ArgLen: 0, ArgType: EXACT},
-			"create": Command{ArgLen: 2, ArgType: EXACT},
+			"create": Command{ArgLen: 2, ArgType: STDIN},
 			"delete": Command{ArgLen: 1, ArgType: EXACT},
-			"copy":   Command{ArgLen: 2, ArgType: EXACT},
+			"copy":   Command{ArgLen: 2, ArgType: STDIN},
 			"count":  Command{ArgLen: 1, ArgType: EXACT},
 		},
 		"mapping": {
 			"get":    Command{ArgLen: 1, ArgType: EXACT},
-			"update": Command{ArgLen: 2, ArgType: EXACT},
+			"update": Command{ArgLen: 2, ArgType: STDIN},
 		},
 		"alias": {
 			"create": Command{ArgLen: 2, ArgType: EXACT},
@@ -99,11 +107,30 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 		case "list":
 			return e.esBaseClient.ListIndex(ctx)
 		case "create":
-			return Empty{}, e.esBaseClient.CreateIndex(ctx, args[0], args[1])
+			if len(args) == CommandMap[target][operation].ArgLen {
+				return Empty{}, e.esBaseClient.CreateIndex(ctx, args[0], args[1])
+			} else if len(args) == CommandMap[target][operation].ArgLen-1 {
+				body, err := ioutil.ReadAll(os.Stdin)
+				if err != nil {
+					return Empty{}, fail.Wrap(err)
+				}
+				return Empty{}, e.esBaseClient.CreateIndex(ctx, args[0], string(body))
+			}
 		case "delete":
 			return Empty{}, e.esBaseClient.DeleteIndex(ctx, args[0])
 		case "copy":
-			task, err := e.esBaseClient.CopyIndex(ctx, args[0], args[1])
+			var task es.Task
+			var err error
+			if len(args) == CommandMap[target][operation].ArgLen {
+				task, err = e.esBaseClient.CopyIndex(ctx, args[0], args[1])
+			} else if len(args) == CommandMap[target][operation].ArgLen-1 {
+				body, err := ioutil.ReadAll(os.Stdin)
+				if err != nil {
+					return Empty{}, fail.Wrap(err)
+				}
+				task, err = e.esBaseClient.CopyIndex(ctx, args[0], string(body))
+			}
+
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
@@ -153,10 +180,20 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 			// Thinking only alias case
 			// Rethink when index
 			// TODO think index case
-			aliasName := args[0]
-			mappingJSON := args[1]
 
-			mapping, err := e.esBaseClient.GetMapping(ctx, args[0])
+			var aliasName, mappingJSON string
+			aliasName = args[0]
+			if len(args) == CommandMap[target][operation].ArgLen {
+				mappingJSON = args[1]
+			} else if len(args) == CommandMap[target][operation].ArgLen-1 {
+				body, err := ioutil.ReadAll(os.Stdin)
+				if err != nil {
+					return Empty{}, fail.Wrap(err)
+				}
+				mappingJSON = string(body)
+			}
+
+			mapping, err := e.esBaseClient.GetMapping(ctx, aliasName)
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
