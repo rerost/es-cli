@@ -3,13 +3,15 @@ all: es-cli
 
 PHONY: vendor
 vendor:
-	go get -u github.com/golang/dep/cmd/dep
+	go get github.com/izumin5210/gex/cmd/gex
+	# Gex depends on dep
+	go get github.com/golang/dep/cmd/dep
+
 	dep ensure -v -vendor-only
 
 PHONY: go-test
 go-test: vendor
-	@go get -u github.com/izumin5210/cgt
-	@go test -v ./... | cgt
+	go test -v ./... | gex cgt
 
 PHONY: e2e-test
 e2e-test: build 
