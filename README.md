@@ -18,7 +18,7 @@ $ es-cli [--host=HOST] [--port=PORT] [--user=BASIC_AUTH_USER] [--pass=BASIC_AUTH
 ```
 $ es-cli list index
 $ es-cli create index <index_name> <mapping_json>
-$ es-cli create index <index_name> # Write mapping json by stdin
+$ es-cli create index <index_name> # Read mapping json by stdin
 $ es-cli copy index <src_index_name> <dst_index_name>
 $ es-cli count index <index_name> # Return total count of documents
 $ es-cli delete index <index_name>
@@ -27,7 +27,8 @@ $ es-cli delete index <index_name>
 ### Mapping API
 ```
 $ es-cli get mapping <index_name or alias_name>
-$ es-cli update mapping <alias_name> # Zero downtime(without write) update mapping
+$ es-cli update mapping <alias_name> <mapping_json> # Zero downtime(without write) update mapping
+$ es-cli update mapping <alias_name> # Read mapping json by stdin
 ```
 
 ### Alias API
