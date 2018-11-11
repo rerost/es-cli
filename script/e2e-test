@@ -3,7 +3,61 @@
 before_do()
 {
   # Install elasticsearch
-  echo "ok"
+  docker run -p 9200:9200 -d --name=test-es docker.elastic.co/elasticsearch/elasticsearch:6.2.0 
+}
+after_do()
+{
+  docker stop test-es
 }
 
-# Wrote test
+cmd="go run main.go"
+
+exec_only()
+{
+  before_do
+
+  ## Index
+  echo "# list index"
+  eval "${cmd} list index" > /dev/null
+  echo "# create index"
+  eval "${cmd} create index test '{}'" > /dev/null
+  echo "# copy index"
+  eval "${cmd} copy index test test_copy" > /dev/null
+  echo "# count index"
+  eval "${cmd} count index test" > /dev/null
+  echo "# delete index"
+  eval "${cmd} delete index test"
+  eval "${cmd} delete index test_copy"
+
+  ## Mapping
+  echo "# get mapping"
+  eval "${cmd} create index test '{}'" > /dev/null
+  eval "${cmd} get mapping test" > /dev/null
+
+  ## Alias
+  echo "# create alias"
+  eval "${cmd} create index test '{}'" > /dev/null
+  eval "${cmd} create alias test_alias test" > /dev/null
+  echo "# drop alias"
+  eval "${cmd} drop alias test_alias test" > /dev/null
+  echo "# add alias"
+  eval "${cmd} create index test1 '{}'" > /dev/null
+  eval "${cmd} create index test2 '{}'" > /dev/null
+  eval "${cmd} add alias test_alias test1 test2" > /dev/null
+  echo "# remove alias"
+  eval "${cmd} remove alias test_alias test1 test2" > /dev/null
+  # echo "# get alias"
+  # eval "${cmd} create index test '{}'" > /dev/null
+  # eval "${cmd} create alias test_alias test" > /dev/null
+  # eval "${cmd} get alias test_alias" > /dev/null
+
+  ## Tasks
+  echo "# list task"
+  eval "${cmd} list task" > /dev/null
+  echo "# get task"
+  # TODO
+
+  after_do
+}
+
+exec_only

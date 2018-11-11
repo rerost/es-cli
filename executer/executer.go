@@ -125,12 +125,12 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 			return Empty{}, nil
 			// return Empty{}, e.esBaseClient.DropAlias(ctx, args[0], args[1])
 		case "add":
-			if len(args) != 2 {
+			if len(args) < 2 {
 				return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid arguments expected: %d, %v", 2, args)), fail.WithCode("Invalid arguments"))
 			}
 			return Empty{}, e.esBaseClient.AddAlias(ctx, args[0], args[1])
 		case "remove":
-			if len(args) >= 2 {
+			if len(args) < 2 {
 				return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid arguments expected: >= %d, %v", 2, args)), fail.WithCode("Invalid arguments"))
 			}
 			return Empty{}, e.esBaseClient.RemoveAlias(ctx, args[0], args[1:]...)
