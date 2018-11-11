@@ -44,8 +44,7 @@ jobs:
 
       # specify any bash command here prefixed with `run: `
       - run: make test
-
- workflows:
+workflows:
   version: 2
   build_and_test:
     jobs:
