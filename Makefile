@@ -22,15 +22,16 @@ e2e-test: build
 PHONY: clear
 clear:
 	rm -rf bin/
+	rm -rf build/
 	rm -rf vendor/
 
 ## Use this in CI
 PHONY: build
 build: vendor
 ifdef GOOS
-	go build -o es-cli-$(GOOS)-$(GOARCH) $ .
+	go build -o build/es-cli-$(GOOS)-$(GOARCH) $ .
 else
-	go build .
+	go build -o build/es-cli .
 endif
 
 PHONY: test
@@ -38,4 +39,4 @@ test: go-test e2e-test
 
 PHONY: release
 release: vendor build	
-	gex ghr -t $(GITHUB_ACCESS_TOKEN) $(RELEASE_TAG) bin/es-cli*
+	gex ghr -t $(GITHUB_ACCESS_TOKEN) $(RELEASE_TAG) build/
