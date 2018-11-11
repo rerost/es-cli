@@ -38,4 +38,4 @@ test: go-test e2e-test
 
 PHONY: release
 release: vendor build	
-	gex ghr -t $(GITHUB_ACCESS_TOKEN) $(RELEASE_TAG) bin/es-cli
+	gex ghr -t $(GITHUB_ACCESS_TOKEN) $(RELEASE_TAG) bin/es-cli*
