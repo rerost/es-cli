@@ -3,19 +3,17 @@
 before_do()
 {
   # Install elasticsearch
-  docker run -p 9200:9200 -d --name=test-es docker.elastic.co/elasticsearch/elasticsearch:6.2.0 
+  docker run -p 9200:9200 -d --name=test-es-$1 --rm elasticsearch:$1
 }
 after_do()
 {
-  docker stop test-es
+  docker stop test-es-$1
 }
 
 cmd="go run main.go"
 
 exec_only()
 {
-  before_do
-
   ## Index
   echo "# list index"
   eval "${cmd} list index" > /dev/null
@@ -60,8 +58,8 @@ exec_only()
   eval "${cmd} list task" > /dev/null
   echo "# get task"
   # TODO
-
-  after_do
 }
 
+before_do "5"
 exec_only
+after_do "5"
