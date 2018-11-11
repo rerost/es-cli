@@ -609,6 +609,9 @@ func (client baseClientImp) Ping(ctx context.Context) (bool, error) {
 }
 
 func (client baseClientImp) baseURL() string {
+	if client.Port == "None" {
+		return client.Host
+	}
 	return client.Host + ":" + client.Port
 }
 func (client baseClientImp) listIndexURL() string {

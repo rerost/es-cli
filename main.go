@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -81,7 +82,18 @@ func main() {
 			ctx = context.WithValue(ctx, setting.SettingKey("pass"), cliContext.String("pass"))
 		}
 
-		esBaseClient, err := es.NewBaseClient(ctx, new(http.Client))
+		ctx = context.WithValue(ctx, setting.SettingKey("insecure"), cliContext.Bool("insecure"))
+		var httpClient *http.Client
+		if cliContext.Bool("insecure") {
+			tr := &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			}
+			httpClient = &http.Client{Transport: tr}
+		} else {
+			httpClient = new(http.Client)
+		}
+
+		esBaseClient, err := es.NewBaseClient(ctx, httpClient)
 		if err != nil {
 			return err
 		}
@@ -110,7 +122,7 @@ func main() {
 			cli.ShowAppHelp(cliContext)
 		}
 		fmt.Fprintf(os.Stdout, result.String())
-		return err
+		return fail.Wrap(err)
 	}
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
@@ -130,8 +142,12 @@ func main() {
 			Usage: "ES basic auth user",
 		},
 		cli.StringFlag{
-			Name:  "password, P",
+			Name:  "pass, P",
 			Usage: "ES basic auth password",
+		},
+		cli.BoolFlag{
+			Name:  "insecure, k",
+			Usage: "Same as curl insecure",
 		},
 	}
 
