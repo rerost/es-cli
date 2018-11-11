@@ -17,13 +17,6 @@ jobs:
     steps:
       - checkout
       - run: make test
-  release:
-    docker:
-      - image: circleci/golang:1.11
-    working_directory: /go/src/github.com/rerost/es-cli
-    steps:
-      - checkout
-      - run: make build 
 
 workflows:
   version: 2
