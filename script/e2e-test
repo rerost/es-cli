@@ -4,7 +4,7 @@ set -eu
 before_do()
 {
   # Install elasticsearch
-  docker run -p 9200:9200 -d --name=test-es-$1 --rm elasticsearch:$1
+  docker run -p 9200:9200 -d --name=test-es-$1 --rm docker.elastic.co/elasticsearch/elasticsearch:$1
   sleep 10
 }
 after_do()
