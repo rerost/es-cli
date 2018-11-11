@@ -9,7 +9,7 @@ jobs:
     working_directory: /go/src/github.com/rerost/es-cli
     steps:
       - checkout
-      - make build
+      - run: make build
   test:
     docker:
       - image: circleci/golang:1.11
