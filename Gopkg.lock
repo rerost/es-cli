@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  branch = "master"
+  digest = "1:cebdd376a4a385abb3e26b89f7db3c936424c4d9a9830cee23bc67c74f21ef7c"
+  name = "github.com/Songmu/retry"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "902aa877ec14b4d10b9db5c8caf81a111cf0680e"
+
+[[projects]]
   digest = "1:97df918963298c287643883209a2c3f642e6593379f97ab400c2a2e219ab647d"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
@@ -23,12 +31,12 @@
   version = "v0.2.0"
 
 [[projects]]
-  digest = "1:f4f203acd8b11b8747bdcd91696a01dbc95ccb9e2ca2db6abf81c3a4f5e950ce"
+  branch = "master"
+  digest = "1:d226d0f3f08498c5965527df6b78d9e3a89a60057a4743c2a3ab4b349f9382f9"
   name = "github.com/google/go-github"
   packages = ["github"]
   pruneopts = "UT"
-  revision = "f55b50f38167644bb7e4be03d9a2bde71d435239"
-  version = "v18.2.0"
+  revision = "99760a16213d6fdde13f4e477438f876b6c9c6eb"
 
 [[projects]]
   digest = "1:a63cff6b5d8b95638bfe300385d93b2a6d9d687734b863da8e09dc834510a690"
@@ -64,6 +72,22 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:0f96ec4151a24d7bfd4298fc13cc320a000e31b4e5431cf88e3ffc961db846fd"
+  name = "github.com/mattn/go-colorable"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "efa589957cd060542a26d2dd7832fd6a6c6c3ade"
+
+[[projects]]
+  digest = "1:0981502f9816113c9c8c4ac301583841855c8cf4da8c72f696b3ebedf6d0e4e5"
+  name = "github.com/mattn/go-isatty"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c"
+  version = "v0.0.4"
+
+[[projects]]
+  branch = "master"
   digest = "1:ded79ae4dc43f8382f782459c8082f8910e5002fc04a492e98c7a72734ae0dc5"
   name = "github.com/mitchellh/colorstring"
   packages = ["."]
@@ -71,12 +95,12 @@
   revision = "8631ce90f28644f54aeedcb3e389a85174e067d1"
 
 [[projects]]
-  digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
+  branch = "master"
+  digest = "1:9f6281d8f50290ba740db82fe5be52877936e47928cd67285ab31b490c202247"
   name = "github.com/pkg/errors"
   packages = ["."]
   pruneopts = "UT"
-  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
-  version = "v0.8.0"
+  revision = "059132a15dd08d6704c67711dae0cf35ab991756"
 
 [[projects]]
   digest = "1:b2baf6620362ef4ce50330918c4e980396ac2f3abd26442818c9a91a2fbb9e97"
@@ -87,28 +111,28 @@
   version = "v3.1.0"
 
 [[projects]]
-  digest = "1:351df9b0130fc0a9b1a61f74ff6b3f47cb104799877fe9e749da6190b0029697"
+  branch = "master"
+  digest = "1:7538a374d2a3894e41839c892d132d0a327b333e22e47e2588ee64ef4ca2bf61"
   name = "github.com/tcnksm/ghr"
   packages = ["."]
   pruneopts = "UT"
-  revision = "a12ff1c72214b6923f2625c8a83884b3a2d22263"
-  version = "v0.5.4"
+  revision = "1dabd986f323f9f96458c418f61d562fd2918442"
 
 [[projects]]
-  digest = "1:ebabd8967efa341b15e51b329eb5b7ebc69b573fb4adb4ac2433fa532edcadbc"
+  branch = "master"
+  digest = "1:9103234d8f125b20a2c1a59c412138cef1455e725d50e812d9300485b0d24173"
   name = "github.com/tcnksm/go-gitconfig"
   packages = ["."]
   pruneopts = "UT"
-  revision = "d154598bacbf4501c095a309753c5d4af66caa81"
-  version = "v0.1.2"
+  revision = "6411ba19847f20afe47f603328d97aaeca6def6f"
 
 [[projects]]
-  digest = "1:a61ba87c99e93863d5c7ec18330c7cb31453165808e6eff0b74fbdccd194723f"
+  branch = "master"
+  digest = "1:eefc695042e6873e2e031a81bde1afcc7e12fe3849b9a7b77f5be1bccd9ede44"
   name = "github.com/tcnksm/go-latest"
   packages = ["."]
   pruneopts = "UT"
-  revision = "86500ab1363a867dafe16905b5b85293a0d838eb"
-  version = "0.1.1"
+  revision = "e3007ae9052ed85144087e7392e4c3fbc07962fa"
 
 [[projects]]
   digest = "1:b24d38b282bacf9791408a080f606370efa3d364e4b5fd9ba0f7b87786d3b679"

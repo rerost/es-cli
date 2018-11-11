@@ -50,5 +50,5 @@
   name = "github.com/izumin5210/cgt"
 
 [[constraint]]
+  branch = "master"
   name = "github.com/tcnksm/ghr"
-  version = "0.5.4"
