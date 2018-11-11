@@ -60,6 +60,10 @@ exec_only()
   # TODO
 }
 
+before_do "6.2.0"
+exec_only
+after_do "6.2.0"
+
 before_do "5"
 exec_only
 after_do "5"
