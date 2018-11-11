@@ -11,13 +11,17 @@ go-test: vendor
 	@go test -v ./...
 
 PHONY: e2e-test
-e2e-test: es-cli
+e2e-test: build 
 	./script/e2e-test
 
+PHONY: clear
+clear:
+	rm -rf bin/
+	rm -rf vendor/
 
 ## Use this in CI
-PHONY: es-cli
-es-cli: vendor
+PHONY: build
+build: vendor
 	go build -o bin/es-cli .
 
 PHONY: test
