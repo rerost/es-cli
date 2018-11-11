@@ -9,12 +9,7 @@ jobs:
     working_directory: /go/src/github.com/rerost/es-cli
     steps:
       - checkout
-      - run: GOOS=linux   GOARCH=amd64 make build
-      - run: GOOS=windows GOARCH=amd64 make build
-      - run: GOOS=darwin  GOARCH=amd64 make build
-      - run: GOOS=linux   GOARCH=386   make build
-      - run: GOOS=windows GOARCH=386   make build
-      - run: GOOS=darwin  GOARCH=386   make build
+      - run: make build
   test:
     docker:
       - image: circleci/golang:1.11
@@ -22,10 +17,32 @@ jobs:
     steps:
       - checkout
       - run: make test
+  release:
+    docker:
+      - image: circleci/golang:1.11
+    working_directory: /go/src/github.com/rerost/es-cli
+    steps:
+      - checkout
+      - run: GOOS=linux   GOARCH=amd64 make build
+      - run: GOOS=windows GOARCH=amd64 make build
+      - run: GOOS=darwin  GOARCH=amd64 make build
+      - run: GOOS=linux   GOARCH=386   make build
+      - run: GOOS=windows GOARCH=386   make build
+      - run: GOOS=darwin  GOARCH=386   make build
+      - run: make release
 
 workflows:
   version: 2
   build_and_test:
     jobs:
       - build
-      - test
+      - test:
+          requires:
+            - build
+      - release:
+          requires:
+            - build
+            - test
+          filters:
+            branches:
+              only: /^v\d+\.\d+\.\d+$/
