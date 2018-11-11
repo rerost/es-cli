@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 
@@ -21,48 +23,92 @@ func main() {
 
 	app.Action = func(cliContext *cli.Context) error {
 		ctx := context.Background()
+
+		// Default Value
+		ctx = context.WithValue(ctx, setting.SettingKey("host"), "http://localhost")
+		ctx = context.WithValue(ctx, setting.SettingKey("port"), "9200")
+		ctx = context.WithValue(ctx, setting.SettingKey("type"), "_doc")
+		ctx = context.WithValue(ctx, setting.SettingKey("user"), "")
+		ctx = context.WithValue(ctx, setting.SettingKey("pass"), "")
+
+		// Home config file
+		if homeDir := os.Getenv("HOME"); homeDir != "" {
+			if f, err := ioutil.ReadFile(homeDir + "/.escli.json"); err == nil {
+				configMap := map[string]string{}
+				err = json.Unmarshal(f, &configMap)
+				if err != nil {
+					return fail.Wrap(err)
+				}
+
+				for k, v := range configMap {
+					ctx = context.WithValue(ctx, setting.SettingKey(k), v)
+				}
+			}
+		}
+
+		// Config file
+		if f, err := ioutil.ReadFile(".escli.json"); err == nil {
+			configMap := map[string]string{}
+			err = json.Unmarshal(f, &configMap)
+			if err != nil {
+				return fail.Wrap(err)
+			}
+
+			for k, v := range configMap {
+				ctx = context.WithValue(ctx, setting.SettingKey(k), v)
+			}
+		}
+
+		// Params
+		_host := cliContext.String("host")
+		if _host != "" {
+			ctx = context.WithValue(ctx, setting.SettingKey("host"), _host)
+		}
+		_port := cliContext.String("port")
+		if _port != "" {
+			ctx = context.WithValue(ctx, setting.SettingKey("port"), _port)
+		}
+		_type := cliContext.String("type")
+		if _type != "" {
+			ctx = context.WithValue(ctx, setting.SettingKey("type"), _type)
+		}
+		_user := cliContext.String("user")
+		if _user != "" {
+			ctx = context.WithValue(ctx, setting.SettingKey("user"), _user)
+		}
+		_pass := cliContext.String("pass")
+		if _pass != "" {
+			ctx = context.WithValue(ctx, setting.SettingKey("pass"), cliContext.String("pass"))
+		}
+
+		esBaseClient, err := es.NewBaseClient(ctx, new(http.Client))
+		if err != nil {
+			return err
+		}
+
 		head := cliContext.Args().First()
 		args := cliContext.Args().Tail()
 
 		if head == "" {
-			return fail.New("You need <operation>")
+			cli.ShowAppHelp(cliContext)
+			return fail.Wrap(fail.New("You need <operation>"), fail.WithCode("Invalid arguments"))
 		}
 		operation := head
 
 		head = cli.Args(args).First()
 		args = cli.Args(args).Tail()
 		if head == "" {
-			return fail.New("You need <target>")
+			cli.ShowAppHelp(cliContext)
+			return fail.Wrap(fail.New("You need <target>"), fail.WithCode("Invalid arguments"))
 		}
 		target := head
 
-		// Default Value
-		_host := cliContext.String("host")
-		if _host == "" {
-			_host = "http://localhost"
-		}
-		_port := cliContext.String("port")
-		if _port == "" {
-			_port = "9200"
-		}
-		_type := cliContext.String("host")
-		if _type == "" {
-			_type = "_doc"
-		}
-
-		ctx = context.WithValue(ctx, setting.SettingKey("Host"), _host)
-		ctx = context.WithValue(ctx, setting.SettingKey("Port"), _port)
-		ctx = context.WithValue(ctx, setting.SettingKey("Type"), _type)
-
-		ctx = context.WithValue(ctx, setting.SettingKey("User"), cliContext.String("user"))
-		ctx = context.WithValue(ctx, setting.SettingKey("Pass"), cliContext.String("pass"))
-
-		esBaseClient, err := es.NewBaseClient(ctx, new(http.Client))
-		if err != nil {
-			return err
-		}
 		e := executer.NewExecuter(esBaseClient)
 		result, err := e.Run(ctx, operation, target, args)
+
+		if fail.Unwrap(err).Code == "Invalid arguments" {
+			cli.ShowAppHelp(cliContext)
+		}
 		fmt.Fprintf(os.Stdout, result.String())
 		return err
 	}

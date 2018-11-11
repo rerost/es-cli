@@ -111,17 +111,17 @@ func NewBaseClient(ctx context.Context, httpClient *http.Client) (BaseClient, er
 	client := baseClientImp{}
 	client.HttpClient = httpClient
 
-	_host, ok := ctx.Value(setting.SettingKey("Host")).(string)
+	_host, ok := ctx.Value(setting.SettingKey("host")).(string)
 	if !ok {
 		return client, fail.New("Failed to extract host")
 	}
 
-	_port, ok := ctx.Value(setting.SettingKey("Port")).(string)
+	_port, ok := ctx.Value(setting.SettingKey("port")).(string)
 	if !ok {
 		return client, fail.New("Failed to extract port")
 	}
 
-	_type, ok := ctx.Value(setting.SettingKey("Type")).(string)
+	_type, ok := ctx.Value(setting.SettingKey("type")).(string)
 	if !ok {
 		return client, fail.New("Failed to extract type")
 	}
@@ -130,12 +130,12 @@ func NewBaseClient(ctx context.Context, httpClient *http.Client) (BaseClient, er
 	client.Port = _port
 	client.Type = _type
 
-	_user, ok := ctx.Value(setting.SettingKey("User")).(string)
+	_user, ok := ctx.Value(setting.SettingKey("user")).(string)
 	if ok {
 		client.User = null.StringFrom(_user)
 	}
 
-	_pass, ok := ctx.Value(setting.SettingKey("Pass")).(string)
+	_pass, ok := ctx.Value(setting.SettingKey("pass")).(string)
 	if ok {
 		client.Pass = null.StringFrom(_pass)
 	}

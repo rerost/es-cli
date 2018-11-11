@@ -25,6 +25,10 @@ clear:
 	rm -rf build/
 	rm -rf vendor/
 
+PHONY: install
+install: vendor
+	go install
+
 ## Use this in CI
 PHONY: build
 build: vendor
