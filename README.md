@@ -1,8 +1,11 @@
 # es-cli
 [![CircleCI](https://circleci.com/gh/rerost/es-cli/tree/master.svg?style=svg&circle-token=df496b759fd684d97bf6f94c9251763960fcc049)](https://circleci.com/gh/rerost/es-cli/tree/master)
 
-This tool is **still under development**
-It's only support operations. e.g. create index, reindex, update mapping, ...
+This tool is **still under development**.
+
+It's high useage elasticsearch's operation wrapper tool.
+For example, creating index and add/remove alias operations is frequently performed, but JSON API is too complicated(I can not remember).
+So I create this tool
 
 ## Installation
 `go get -u github.com/rerost/es-cli`
