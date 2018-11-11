@@ -1,2 +1,2 @@
-# elasticsearch-cli
+# es-cli
 This tool is only support operations e.g. create index, reindex, update mapping, ...
