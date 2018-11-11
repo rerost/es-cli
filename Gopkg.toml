@@ -48,3 +48,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/izumin5210/cgt"
+
+[[constraint]]
+  name = "github.com/tcnksm/ghr"
+  version = "0.5.4"
