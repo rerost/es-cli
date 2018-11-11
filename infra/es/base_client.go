@@ -185,6 +185,7 @@ func (client baseClientImp) CreateIndex(ctx context.Context, indexName string, m
 		return fail.Wrap(err)
 	}
 
+	request.Header.Add("Content-Type", "application/json")
 	if client.User.Valid && client.Pass.Valid {
 		request.SetBasicAuth(client.User.String, client.Pass.String)
 	}
@@ -198,6 +199,7 @@ func (client baseClientImp) CreateIndex(ctx context.Context, indexName string, m
 	responseMap := map[string]interface{}{}
 
 	responseBody, err := ioutil.ReadAll(response.Body)
+	fmt.Println(responseBody)
 	err = json.Unmarshal(responseBody, &responseMap)
 	if err != nil {
 		return fail.Wrap(err)
@@ -369,7 +371,7 @@ func (client baseClientImp) CreateAlias(ctx context.Context, aliasName string, i
 }`, indexName, aliasName)
 
 	request, err := http.NewRequest(http.MethodPost, client.aliasURL(), bytes.NewBufferString(createAliasJSON))
-	request.Header.Add("Content-Type", "application/json")
+	request.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		return fail.Wrap(err)
 	}
@@ -408,8 +410,10 @@ func (client baseClientImp) AddAlias(ctx context.Context, aliasName string, inde
 	for _, indexName := range indexNames {
 		actions = append(actions, fmt.Sprintf(`
 {
-	"add": "%s",
-	"alias": "%s"
+	"add": {
+		"index": "%s",
+		"alias": "%s"
+	}
 }
 		`, indexName, aliasName))
 	}
@@ -456,8 +460,10 @@ func (client baseClientImp) RemoveAlias(ctx context.Context, aliasName string, i
 	for _, indexName := range indexNames {
 		actions = append(actions, fmt.Sprintf(`
 {
-	"remove": "%s",
-	"alias": "%s"
+	"remove": {
+		"index": "%s",
+		"alias": "%s"
+	}
 }
 		`, indexName, aliasName))
 	}
@@ -499,6 +505,8 @@ func (client baseClientImp) RemoveAlias(ctx context.Context, aliasName string, i
 
 	return nil
 }
+
+// TODO implement
 func (client baseClientImp) GetAlias(ctx context.Context, aliasName string) (Indices, error) {
 	return Indices{}, nil
 }
