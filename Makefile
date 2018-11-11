@@ -1,3 +1,5 @@
+$(eval RELEASE_TAG := $(shell cat version.json | jq ".version" --raw-output))
+
 PHONY: .all
 all: es-cli
 
@@ -25,7 +27,15 @@ clear:
 ## Use this in CI
 PHONY: build
 build: vendor
-	go build -o bin/es-cli .
+ifdef GOOS
+	go build -o es-cli-$(GOOS)-$(GOARCH) $ .
+else
+	go build .
+endif
 
 PHONY: test
 test: go-test e2e-test
+
+PHONY: release
+release: vendor build	
+	gex ghr -t $(GITHUB_ACCESS_TOKEN) $(RELEASE_TAG) bin/es-cli
