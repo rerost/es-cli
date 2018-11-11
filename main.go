@@ -45,6 +45,21 @@ func main() {
 		ctx = context.WithValue(ctx, setting.SettingKey("user"), "")
 		ctx = context.WithValue(ctx, setting.SettingKey("pass"), "")
 
+		// Home config file
+		if homeDir := os.Getenv("HOME"); homeDir != "" {
+			if f, err := ioutil.ReadFile(homeDir + "/.escli.json"); err == nil {
+				configMap := map[string]string{}
+				err = json.Unmarshal(f, &configMap)
+				if err != nil {
+					return fail.Wrap(err)
+				}
+
+				for k, v := range configMap {
+					ctx = context.WithValue(ctx, setting.SettingKey(k), v)
+				}
+			}
+		}
+
 		// Config file
 		if f, err := ioutil.ReadFile(".escli.json"); err == nil {
 			configMap := map[string]string{}
