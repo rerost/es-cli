@@ -8,7 +8,8 @@ vendor:
 
 PHONY: go-test
 go-test: vendor
-	@go test -v ./...
+	@go get -u github.com/izumin5210/cgt
+	@go test -v ./... | cgt
 
 PHONY: e2e-test
 e2e-test: build 
