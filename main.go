@@ -23,20 +23,6 @@ func main() {
 
 	app.Action = func(cliContext *cli.Context) error {
 		ctx := context.Background()
-		head := cliContext.Args().First()
-		args := cliContext.Args().Tail()
-
-		if head == "" {
-			return fail.New("You need <operation>")
-		}
-		operation := head
-
-		head = cli.Args(args).First()
-		args = cli.Args(args).Tail()
-		if head == "" {
-			return fail.New("You need <target>")
-		}
-		target := head
 
 		// Default Value
 		ctx = context.WithValue(ctx, setting.SettingKey("host"), "http://localhost")
@@ -99,6 +85,24 @@ func main() {
 		if err != nil {
 			return err
 		}
+
+		head := cliContext.Args().First()
+		args := cliContext.Args().Tail()
+
+		if head == "" {
+			cli.ShowAppHelp(cliContext)
+			return fail.Wrap(fail.New("You need <operation>"), fail.WithCode("Invalid arguments"))
+		}
+		operation := head
+
+		head = cli.Args(args).First()
+		args = cli.Args(args).Tail()
+		if head == "" {
+			cli.ShowAppHelp(cliContext)
+			return fail.Wrap(fail.New("You need <target>"), fail.WithCode("Invalid arguments"))
+		}
+		target := head
+
 		e := executer.NewExecuter(esBaseClient)
 		result, err := e.Run(ctx, operation, target, args)
 
