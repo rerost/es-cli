@@ -93,6 +93,12 @@ func init() {
 			"list": Command{ArgLen: 0, ArgType: EXACT},
 			"get":  Command{ArgLen: 1, ArgType: EXACT},
 		},
+		"version": {
+			"get": Command{ArgLen: 0, ArgType: EXACT},
+		},
+		"ping": {
+			"check": Command{ArgLen: 0, ArgType: EXACT},
+		},
 	}
 }
 
@@ -268,6 +274,20 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 			return e.esBaseClient.GetTask(ctx, args[0])
 		default:
 			return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid operation: %v", operation)), fail.WithCode("Invalid arguments"))
+		}
+	}
+
+	if target == "version" {
+		switch operation {
+		case "get":
+			return e.esBaseClient.Version(ctx)
+		}
+	}
+
+	if target == "ping" {
+		switch operation {
+		case "check":
+			return e.esBaseClient.Ping(ctx)
 		}
 	}
 
