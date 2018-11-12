@@ -311,7 +311,8 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 				docType = args[4]
 			}
 
-			cctx := context.Background()
+			// For copy context
+			cctx := context.WithValue(ctx, setting.SettingKey(""), nil)
 			cctx = setting.ContextWithOptions(cctx, host, port, docType, user, pass)
 
 			remoteClient, err := es.NewBaseClient(cctx, e.httpClient)
@@ -319,13 +320,24 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 				return Empty{}, fail.Wrap(err)
 			}
 
-			cnt, err := remoteClient.CountIndex(ctx, indexName)
+			cnt, err := remoteClient.CountIndex(cctx, indexName)
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
 
 			for i := int64(0); i <= cnt.Num; i += int64(batchSize) {
-				searchResult, err := remoteClient.SearchIndex(ctx, indexName, fmt.Sprintf(`{"query": {"match_all": {}}, "size": %d, "from": %d`, batchSize, i))
+				fmt.Printf("From %d", i)
+				searchResult, err := remoteClient.SearchIndex(cctx, indexName, fmt.Sprintf(`{"query": {"match_all": {}}, "size": %d, "from": %d`, batchSize, i))
+				if err != nil {
+					return Empty{}, fail.Wrap(err)
+				}
+
+				mapping, err := remoteClient.GetMapping(cctx, indexName)
+				if err != nil {
+					return Empty{}, fail.Wrap(err)
+				}
+
+				err = remoteClient.CreateIndex(cctx, indexName, mapping.String())
 				if err != nil {
 					return Empty{}, fail.Wrap(err)
 				}
@@ -344,7 +356,24 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 				if err != nil {
 					return Empty{}, err
 				}
+				fmt.Printf("Done %d", i)
 			}
+
+			srcCnt, err := remoteClient.CountIndex(cctx, indexName)
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+			dstCnt, err := e.esBaseClient.CountIndex(ctx, indexName)
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+
+			if srcCnt.Num != dstCnt.Num {
+				e.esBaseClient.DeleteIndex(ctx, indexName)
+				return Empty{}, fail.New("Failed to copy index")
+			}
+
+			return Empty{}, nil
 		}
 	}
 
