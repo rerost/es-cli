@@ -7,6 +7,10 @@ It's high useage elasticsearch's operation wrapper tool.
 For example, creating index and add/remove alias operations is frequently performed, but JSON API is too complicated(I can not remember).
 So I create this tool
 
+Before Elasticsearch 2.3, Can not use
+- es-cli update mapping
+- es-cli copy index
+
 ## Installation
 `go get -u github.com/rerost/es-cli`
 
