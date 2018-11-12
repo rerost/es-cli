@@ -75,7 +75,7 @@ func init() {
 			"list":   Command{ArgLen: 0, ArgType: EXACT},
 			"create": Command{ArgLen: 2, ArgType: STDIN},
 			"delete": Command{ArgLen: 1, ArgType: EXACT},
-			"copy":   Command{ArgLen: 2, ArgType: STDIN},
+			"copy":   Command{ArgLen: 2, ArgType: EXACT},
 			"count":  Command{ArgLen: 1, ArgType: EXACT},
 		},
 		"mapping": {
@@ -119,17 +119,7 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 		case "delete":
 			return Empty{}, e.esBaseClient.DeleteIndex(ctx, args[0])
 		case "copy":
-			var task es.Task
-			var err error
-			if len(args) == CommandMap[target][operation].ArgLen {
-				task, err = e.esBaseClient.CopyIndex(ctx, args[0], args[1])
-			} else if len(args) == CommandMap[target][operation].ArgLen-1 {
-				body, err := ioutil.ReadAll(os.Stdin)
-				if err != nil {
-					return Empty{}, fail.Wrap(err)
-				}
-				task, err = e.esBaseClient.CopyIndex(ctx, args[0], string(body))
-			}
+			task, err := e.esBaseClient.CopyIndex(ctx, args[0], string(body))
 
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
