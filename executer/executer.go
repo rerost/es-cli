@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"time"
 
@@ -33,6 +34,7 @@ type ArgTypes int
 const (
 	EXACT ArgTypes = iota
 	MORE
+	LESS
 	STDIN
 )
 
@@ -62,10 +64,11 @@ func (e Empty) String() string {
 
 type executerImp struct {
 	esBaseClient es.BaseClient
+	httpClient   *http.Client
 }
 
-func NewExecuter(esBaseClient es.BaseClient) Executer {
-	return &executerImp{esBaseClient: esBaseClient}
+func NewExecuter(esBaseClient es.BaseClient, httpClient *http.Client) Executer {
+	return &executerImp{esBaseClient: esBaseClient, httpClient: httpClient}
 }
 
 var CommandMap map[string]map[string]Command
@@ -98,6 +101,9 @@ func init() {
 		},
 		"ping": {
 			"check": Command{ArgLen: 0, ArgType: EXACT},
+		},
+		"remote": {
+			"copy": Command{ArgLen: 5, ArgType: LESS},
 		},
 	}
 }
@@ -288,6 +294,57 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 		switch operation {
 		case "check":
 			return e.esBaseClient.Ping(ctx)
+		}
+	}
+
+	if target == "remote" {
+		switch operation {
+		case "copy":
+			batchSize := 1000
+			host := args[0]
+			port := args[1]
+			indexName := args[1]
+			user := args[2]
+			pass := args[3]
+			docType := "_doc"
+			if len(args) == 5 {
+				docType = args[4]
+			}
+
+			cctx := context.Background()
+			cctx = setting.ContextWithOptions(cctx, host, port, docType, user, pass)
+
+			remoteClient, err := es.NewBaseClient(cctx, e.httpClient)
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+
+			cnt, err := remoteClient.CountIndex(ctx, indexName)
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+
+			for i := int64(0); i <= cnt.Num; i += int64(batchSize) {
+				searchResult, err := remoteClient.SearchIndex(ctx, indexName, fmt.Sprintf(`{"query": {"match_all": {}}, "size": %d, "from": %d`, batchSize, i))
+				if err != nil {
+					return Empty{}, fail.Wrap(err)
+				}
+
+				bulkQuery := ""
+				for _, hit := range searchResult.Hits.Hits {
+					metaData := fmt.Sprintf(`{ "index" : { "_index": "%s", "_type": "%s", "_id": "%s" }}`, hit.Index, hit.Type, hit.ID)
+					queryBytes, err := json.Marshal(hit.Source)
+					if err != nil {
+						return Empty{}, fail.Wrap(err)
+					}
+					bulkQuery = bulkQuery + metaData + "\n" + string(queryBytes) + "\n"
+				}
+
+				err = e.esBaseClient.BulkIndex(ctx, indexName, bulkQuery)
+				if err != nil {
+					return Empty{}, err
+				}
+			}
 		}
 	}
 

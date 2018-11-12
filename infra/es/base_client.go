@@ -87,6 +87,26 @@ func (c Pong) String() string {
 	return "Failed"
 }
 
+type SearchResponse struct {
+	Hits struct {
+		Total int64 `json:"total"`
+		Hits  []struct {
+			ID     string                 `json:"_id"`
+			Type   string                 `json:"_type"`
+			Index  string                 `json:"_index"`
+			Source map[string]interface{} `json:"_source"`
+		} `json:"hits"`
+	} `json:"hits"`
+}
+
+func (r SearchResponse) String() string {
+	b, err := json.Marshal(r)
+	if err != nil {
+		panic(err)
+	}
+	return string(b)
+}
+
 // Client is http wrapper
 type BaseClient interface {
 	// Index
@@ -95,6 +115,8 @@ type BaseClient interface {
 	CopyIndex(ctx context.Context, srcIndexName string, dstIndexName string) (Task, error)
 	DeleteIndex(ctx context.Context, indexName string) error
 	CountIndex(ctx context.Context, indexName string) (Count, error)
+	SearchIndex(ctx context.Context, indexName string, query string) (SearchResponse, error)
+	BulkIndex(ctx context.Context, indexName string, body string) error
 
 	// Mapping
 	GetMapping(ctx context.Context, indexOrAliasName string) (Mapping, error)
@@ -338,6 +360,76 @@ func (client baseClientImp) CountIndex(ctx context.Context, indexName string) (C
 	}
 
 	return Count{Num: int64(responseMap["count"].(float64))}, nil
+}
+func (client baseClientImp) SearchIndex(ctx context.Context, indexName string, query string) (SearchResponse, error) {
+	request, err := http.NewRequest(http.MethodPost, client.searchURL(indexName), bytes.NewBufferString(query))
+	if err != nil {
+		return SearchResponse{}, fail.Wrap(err)
+	}
+
+	if client.User.Valid && client.Pass.Valid {
+		request.SetBasicAuth(client.User.String, client.Pass.String)
+	}
+
+	response, err := client.HttpClient.Do(request)
+	if err != nil {
+		return SearchResponse{}, fail.Wrap(err)
+	}
+	defer response.Body.Close()
+
+	responseMap := map[string]interface{}{}
+
+	responseBody, err := ioutil.ReadAll(response.Body)
+	err = json.Unmarshal(responseBody, &responseMap)
+	if err != nil {
+		return SearchResponse{}, fail.Wrap(err)
+	}
+
+	if errMsg, ok := responseMap["error"]; ok {
+		return SearchResponse{}, fail.New(fmt.Sprintf("%v", errMsg))
+	}
+
+	searchResponse := SearchResponse{}
+	err = json.Unmarshal(responseBody, &searchResponse)
+	if err != nil {
+		return SearchResponse{}, fail.Wrap(err)
+	}
+
+	return searchResponse, nil
+}
+func (client baseClientImp) BulkIndex(ctx context.Context, indexName string, body string) error {
+	request, err := http.NewRequest(http.MethodPost, client.bulkURL(), bytes.NewBufferString(body))
+	if err != nil {
+		return fail.Wrap(err)
+	}
+
+	request.Header.Add("Content-Type", "application/x-ndjson")
+	if client.User.Valid && client.Pass.Valid {
+		request.SetBasicAuth(client.User.String, client.Pass.String)
+	}
+
+	response, err := client.HttpClient.Do(request)
+	if err != nil {
+		return fail.Wrap(err)
+	}
+	defer response.Body.Close()
+
+	responseMap := map[string]interface{}{}
+
+	responseBody, err := ioutil.ReadAll(response.Body)
+	err = json.Unmarshal(responseBody, &responseMap)
+	if err != nil {
+		return fail.Wrap(err)
+	}
+
+	if errMsg, ok := responseMap["error"]; ok {
+		return fail.New(fmt.Sprintf("%v", errMsg))
+	}
+	if errMsg, ok := responseMap["errors"]; ok {
+		return fail.New(fmt.Sprintf("%v", errMsg))
+	}
+
+	return nil
 }
 
 // Mapping
@@ -667,6 +759,12 @@ func (client baseClientImp) aliasURL() string {
 }
 func (client baseClientImp) countURL(indexName string) string {
 	return client.indexURL(indexName) + "/_count"
+}
+func (client baseClientImp) searchURL(indexName string) string {
+	return client.baseURL() + "/" + indexName + "/_search"
+}
+func (client baseClientImp) bulkURL() string {
+	return client.baseURL() + "/_bulk"
 }
 
 func addParams(req *http.Request, params map[string]string) *http.Request {
