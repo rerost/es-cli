@@ -119,7 +119,7 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 		case "delete":
 			return Empty{}, e.esBaseClient.DeleteIndex(ctx, args[0])
 		case "copy":
-			task, err := e.esBaseClient.CopyIndex(ctx, args[0], string(body))
+			task, err := e.esBaseClient.CopyIndex(ctx, args[0], args[1])
 
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
