@@ -95,6 +95,9 @@ func init() {
 		"version": {
 			"get": Command{ArgLen: 0, ArgType: EXACT},
 		},
+		"ping": {
+			"check": Command{ArgLen: 0, ArgType: EXACT},
+		},
 	}
 }
 
@@ -263,6 +266,13 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 		switch operation {
 		case "get":
 			return e.esBaseClient.Version(ctx)
+		}
+	}
+
+	if target == "ping" {
+		switch operation {
+		case "check":
+			return e.esBaseClient.Ping(ctx)
 		}
 	}
 
