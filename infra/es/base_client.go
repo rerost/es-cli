@@ -68,7 +68,24 @@ func (c Count) String() string {
 	return fmt.Sprintf("%d", c.Num)
 }
 
-type Version struct{}
+type Version struct {
+	Number string `json:"number"`
+}
+
+func (c Version) String() string {
+	return c.Number
+}
+
+type Pong struct {
+	OK bool
+}
+
+func (c Pong) String() string {
+	if c.OK {
+		return "Pong"
+	}
+	return "Failed"
+}
 
 // Client is http wrapper
 type BaseClient interface {
@@ -95,7 +112,7 @@ type BaseClient interface {
 	GetTask(ctx context.Context, taskID string) (Task, error)
 
 	Version(ctx context.Context) (Version, error)
-	Ping(ctx context.Context) (bool, error)
+	Ping(ctx context.Context) (Pong, error)
 }
 
 type baseClientImp struct {
@@ -578,16 +595,26 @@ func (client baseClientImp) Version(ctx context.Context) (Version, error) {
 		return Version{}, fail.New(fmt.Sprintf("%v", errMsg))
 	}
 
-	if _, ok := responseMap["version"].(Version); !ok {
-		return Version{}, fail.New(fmt.Sprintf("Failed to extract completed from resposne"))
+	jsonVersion, err := json.Marshal(responseMap["version"])
+	if err != nil {
+		return Version{}, fail.Wrap(err)
+	}
+	version := Version{}
+	err = json.Unmarshal(jsonVersion, &version)
+
+	if err != nil {
+		return Version{}, fail.Wrap(err)
+	}
+	if version.Number == "" {
+		return Version{}, fail.New(fmt.Sprintf("Invalid response is returned %v", string(responseBody)))
 	}
 
-	return responseMap["version"].(Version), nil
+	return version, nil
 }
-func (client baseClientImp) Ping(ctx context.Context) (bool, error) {
+func (client baseClientImp) Ping(ctx context.Context) (Pong, error) {
 	request, err := http.NewRequest(http.MethodGet, client.baseURL(), bytes.NewBufferString(""))
 	if err != nil {
-		return false, fail.Wrap(err)
+		return Pong{OK: false}, fail.Wrap(err)
 	}
 
 	if client.User.Valid && client.Pass.Valid {
@@ -596,16 +623,16 @@ func (client baseClientImp) Ping(ctx context.Context) (bool, error) {
 
 	response, err := client.HttpClient.Do(request)
 	if err != nil {
-		return false, fail.Wrap(err)
+		return Pong{OK: false}, fail.Wrap(err)
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
 		responseBody, _ := ioutil.ReadAll(response.Body)
-		return false, fail.New(string(responseBody))
+		return Pong{OK: false}, fail.New(string(responseBody))
 	}
 
-	return true, nil
+	return Pong{OK: true}, nil
 }
 
 func (client baseClientImp) baseURL() string {
