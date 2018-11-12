@@ -370,7 +370,22 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 
 			if srcCnt.Num != dstCnt.Num {
 				e.esBaseClient.DeleteIndex(ctx, indexName)
-				return Empty{}, fail.New("Failed to copy index")
+				return Empty{}, fail.New("Failed to copy index(Not correct count)")
+			}
+
+			// NOTE: When different version of ES, Its correct?
+			srcMapping, err := remoteClient.GetMapping(cctx, indexName)
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+			dstMapping, err := e.esBaseClient.GetMapping(ctx, indexName)
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+
+			if srcMapping.String() != dstMapping.String() {
+				e.esBaseClient.DeleteIndex(ctx, indexName)
+				return Empty{}, fail.New("Failed to copy index(Not correct mapping)")
 			}
 
 			return Empty{}, nil
