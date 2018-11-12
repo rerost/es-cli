@@ -660,7 +660,7 @@ func (client baseClientImp) taskURL(taskID string) string {
 	return client.tasksURL() + "/" + taskID
 }
 func (client baseClientImp) mappingURL(indexOrAliasName string) string {
-	return client.baseURL() + "/" + indexOrAliasName
+	return client.baseURL() + "/" + indexOrAliasName + "/" + "_mapping" + "/" + client.Type
 }
 func (client baseClientImp) aliasURL() string {
 	return client.baseURL() + "/_aliases"
