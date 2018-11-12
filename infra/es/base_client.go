@@ -68,7 +68,13 @@ func (c Count) String() string {
 	return fmt.Sprintf("%d", c.Num)
 }
 
-type Version struct{}
+type Version struct {
+	Number string `json:"number"`
+}
+
+func (c Version) String() string {
+	return c.Number
+}
 
 // Client is http wrapper
 type BaseClient interface {
@@ -578,11 +584,21 @@ func (client baseClientImp) Version(ctx context.Context) (Version, error) {
 		return Version{}, fail.New(fmt.Sprintf("%v", errMsg))
 	}
 
-	if _, ok := responseMap["version"].(Version); !ok {
-		return Version{}, fail.New(fmt.Sprintf("Failed to extract completed from resposne"))
+	jsonVersion, err := json.Marshal(responseMap["version"])
+	if err != nil {
+		return Version{}, fail.Wrap(err)
+	}
+	version := Version{}
+	err = json.Unmarshal(jsonVersion, &version)
+
+	if err != nil {
+		return Version{}, fail.Wrap(err)
+	}
+	if version.Number == "" {
+		return Version{}, fail.New(fmt.Sprintf("Invalid response is returned %v", string(responseBody)))
 	}
 
-	return responseMap["version"].(Version), nil
+	return version, nil
 }
 func (client baseClientImp) Ping(ctx context.Context) (bool, error) {
 	request, err := http.NewRequest(http.MethodGet, client.baseURL(), bytes.NewBufferString(""))
