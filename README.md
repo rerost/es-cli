@@ -50,6 +50,9 @@ $ es-cli get task <task_id>
 $ es-cli list task
 ```
 
+### Experimental API
+$ es-cli copy remote remoteHost remotePort copyIndexName user pass (type or not)
+
 ## Configuration
 You can use configuration file.
 es-cli see options order by command options > current directory > home direcotry.
