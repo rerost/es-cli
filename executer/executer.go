@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/rerost/es-cli/infra/es"
+	"github.com/rerost/es-cli/setting"
 	"github.com/srvc/fail"
 )
 
@@ -323,12 +324,12 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 				return Empty{}, fail.Wrap(err)
 			}
 
-			err = remoteClient.CreateIndex(cctx, indexName, mapping.String())
+			err = e.esBaseClient.CreateIndex(cctx, indexName, mapping.String())
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
 
-			for i := int64(0); i <= cnt.Num; i += int64(batchSize) {
+			for i := int64(0); i <= cnt.Num && i+int64(batchSize) <= 10000; i += int64(batchSize) {
 				fmt.Printf("From %d\n", i)
 				searchResult, err := remoteClient.SearchIndex(cctx, indexName, fmt.Sprintf(`{"query": {"match_all": {}}, "size": %d, "from": %d}`, batchSize, i))
 				if err != nil {
@@ -347,7 +348,7 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 
 				err = e.esBaseClient.BulkIndex(ctx, indexName, bulkQuery)
 				if err != nil {
-					return Empty{}, err
+					return Empty{}, fail.Wrap(err)
 				}
 				fmt.Printf("Done %d\n", i)
 			}

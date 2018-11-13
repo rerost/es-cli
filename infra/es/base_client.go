@@ -427,6 +427,10 @@ func (client baseClientImp) BulkIndex(ctx context.Context, indexName string, bod
 		return fail.New(fmt.Sprintf("%v", errMsg))
 	}
 	if errMsg, ok := responseMap["errors"]; ok {
+		// BulkIndex return false when error nil
+		if errBool := responseMap["errors"].(bool); !errBool {
+			return nil
+		}
 		return fail.New(fmt.Sprintf("%v", errMsg))
 	}
 
