@@ -51,7 +51,9 @@ $ es-cli list task
 ```
 
 ### Experimental API
+```
 $ es-cli copy remote remoteHost remotePort copyIndexName user pass (type or not)
+```
 
 ## Configuration
 You can use configuration file.
