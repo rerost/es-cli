@@ -314,11 +314,6 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 				return Empty{}, fail.Wrap(err)
 			}
 
-			cnt, err := remoteClient.CountIndex(cctx, indexName)
-			if err != nil {
-				return Empty{}, fail.Wrap(err)
-			}
-
 			mapping, err := remoteClient.GetMapping(cctx, indexName)
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
@@ -329,9 +324,15 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 				return Empty{}, fail.Wrap(err)
 			}
 
-			for i := int64(0); i <= cnt.Num && i+int64(batchSize) <= 10000; i += int64(batchSize) {
-				fmt.Printf("From %d\n", i)
-				searchResult, err := remoteClient.SearchIndex(cctx, indexName, fmt.Sprintf(`{"query": {"match_all": {}}, "size": %d, "from": %d}`, batchSize, i))
+			lastID := ""
+			for {
+				query := fmt.Sprintf(`{"query": {"match_all": {}}, "size": %d, "sort": [{"_id": "desc"}]}`, batchSize)
+				if lastID != "" {
+					fmt.Printf("Search after %s\n", lastID)
+					query = fmt.Sprintf(`{"query": {"match_all": {}}, "size": %d, "sort": [{"_id": "desc"}], "search_after": ["%s"]}`, batchSize, lastID)
+				}
+				searchResult, err := remoteClient.SearchIndex(cctx, indexName, query)
+
 				if err != nil {
 					return Empty{}, fail.Wrap(err)
 				}
@@ -350,7 +351,14 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 				if err != nil {
 					return Empty{}, fail.Wrap(err)
 				}
-				fmt.Printf("Done %d\n", i)
+
+				fmt.Printf("Done search after %s\n", lastID)
+
+				hitsSize := len(searchResult.Hits.Hits)
+				if hitsSize == 0 {
+					break
+				}
+				lastID = searchResult.Hits.Hits[hitsSize-1].ID
 			}
 
 			srcCnt, err := remoteClient.CountIndex(cctx, indexName)
