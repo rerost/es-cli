@@ -328,7 +328,7 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 			for {
 				query := fmt.Sprintf(`{"query": {"match_all": {}}, "size": %d, "sort": [{"_id": "desc"}]}`, batchSize)
 				if lastID != "" {
-					fmt.Printf("Search after %s\n", lastID)
+					fmt.Printf("Copying search after %s\n", lastID)
 					query = fmt.Sprintf(`{"query": {"match_all": {}}, "size": %d, "sort": [{"_id": "desc"}], "search_after": ["%s"]}`, batchSize, lastID)
 				}
 				searchResult, err := remoteClient.SearchIndex(cctx, indexName, query)
@@ -352,7 +352,7 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 					return Empty{}, fail.Wrap(err)
 				}
 
-				fmt.Printf("Done search after %s\n", lastID)
+				fmt.Printf("Done copy search after %s\n", lastID)
 
 				hitsSize := len(searchResult.Hits.Hits)
 				if hitsSize == 0 {
