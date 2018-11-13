@@ -103,7 +103,7 @@ func init() {
 			"check": Command{ArgLen: 0, ArgType: EXACT},
 		},
 		"remote": {
-			"copy": Command{ArgLen: 5, ArgType: LESS},
+			"copy": Command{ArgLen: 6, ArgType: STDIN},
 		},
 	}
 }
@@ -303,12 +303,12 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 			batchSize := 1000
 			host := args[0]
 			port := args[1]
-			indexName := args[1]
-			user := args[2]
-			pass := args[3]
+			indexName := args[2]
+			user := args[3]
+			pass := args[4]
 			docType := "_doc"
-			if len(args) == 5 {
-				docType = args[4]
+			if len(args) == 6 {
+				docType = args[5]
 			}
 
 			// For copy context
@@ -325,19 +325,19 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 				return Empty{}, fail.Wrap(err)
 			}
 
+			mapping, err := remoteClient.GetMapping(cctx, indexName)
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+
+			err = remoteClient.CreateIndex(cctx, indexName, mapping.String())
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+
 			for i := int64(0); i <= cnt.Num; i += int64(batchSize) {
-				fmt.Printf("From %d", i)
-				searchResult, err := remoteClient.SearchIndex(cctx, indexName, fmt.Sprintf(`{"query": {"match_all": {}}, "size": %d, "from": %d`, batchSize, i))
-				if err != nil {
-					return Empty{}, fail.Wrap(err)
-				}
-
-				mapping, err := remoteClient.GetMapping(cctx, indexName)
-				if err != nil {
-					return Empty{}, fail.Wrap(err)
-				}
-
-				err = remoteClient.CreateIndex(cctx, indexName, mapping.String())
+				fmt.Printf("From %d\n", i)
+				searchResult, err := remoteClient.SearchIndex(cctx, indexName, fmt.Sprintf(`{"query": {"match_all": {}}, "size": %d, "from": %d}`, batchSize, i))
 				if err != nil {
 					return Empty{}, fail.Wrap(err)
 				}
@@ -356,7 +356,7 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 				if err != nil {
 					return Empty{}, err
 				}
-				fmt.Printf("Done %d", i)
+				fmt.Printf("Done %d\n", i)
 			}
 
 			srcCnt, err := remoteClient.CountIndex(cctx, indexName)

@@ -367,6 +367,7 @@ func (client baseClientImp) SearchIndex(ctx context.Context, indexName string, q
 		return SearchResponse{}, fail.Wrap(err)
 	}
 
+	request.Header.Set("Content-Type", "application/json")
 	if client.User.Valid && client.Pass.Valid {
 		request.SetBasicAuth(client.User.String, client.Pass.String)
 	}
