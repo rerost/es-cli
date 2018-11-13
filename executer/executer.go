@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"time"
 
 	"github.com/rerost/es-cli/infra/es"
+	"github.com/rerost/es-cli/setting"
 	"github.com/srvc/fail"
 )
 
@@ -32,6 +34,7 @@ type ArgTypes int
 const (
 	EXACT ArgTypes = iota
 	MORE
+	LESS
 	STDIN
 )
 
@@ -61,10 +64,11 @@ func (e Empty) String() string {
 
 type executerImp struct {
 	esBaseClient es.BaseClient
+	httpClient   *http.Client
 }
 
-func NewExecuter(esBaseClient es.BaseClient) Executer {
-	return &executerImp{esBaseClient: esBaseClient}
+func NewExecuter(esBaseClient es.BaseClient, httpClient *http.Client) Executer {
+	return &executerImp{esBaseClient: esBaseClient, httpClient: httpClient}
 }
 
 var CommandMap map[string]map[string]Command
@@ -97,6 +101,9 @@ func init() {
 		},
 		"ping": {
 			"check": Command{ArgLen: 0, ArgType: EXACT},
+		},
+		"remote": {
+			"copy": Command{ArgLen: 6, ArgType: STDIN},
 		},
 	}
 }
@@ -281,6 +288,109 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 		switch operation {
 		case "check":
 			return e.esBaseClient.Ping(ctx)
+		}
+	}
+
+	if target == "remote" {
+		switch operation {
+		case "copy":
+			batchSize := 1000
+			host := args[0]
+			port := args[1]
+			indexName := args[2]
+			user := args[3]
+			pass := args[4]
+			docType := "_doc"
+			if len(args) == 6 {
+				docType = args[5]
+			}
+
+			// For copy context
+			cctx := context.WithValue(ctx, setting.SettingKey(""), nil)
+			cctx = setting.ContextWithOptions(cctx, host, port, docType, user, pass)
+
+			remoteClient, err := es.NewBaseClient(cctx, e.httpClient)
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+
+			mapping, err := remoteClient.GetMapping(cctx, indexName)
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+
+			err = e.esBaseClient.CreateIndex(cctx, indexName, mapping.String())
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+
+			lastID := ""
+			for {
+				query := fmt.Sprintf(`{"query": {"match_all": {}}, "size": %d, "sort": [{"_id": "desc"}]}`, batchSize)
+				if lastID != "" {
+					fmt.Printf("Copying search after %s\n", lastID)
+					query = fmt.Sprintf(`{"query": {"match_all": {}}, "size": %d, "sort": [{"_id": "desc"}], "search_after": ["%s"]}`, batchSize, lastID)
+				}
+				searchResult, err := remoteClient.SearchIndex(cctx, indexName, query)
+
+				if err != nil {
+					return Empty{}, fail.Wrap(err)
+				}
+
+				bulkQuery := ""
+				for _, hit := range searchResult.Hits.Hits {
+					metaData := fmt.Sprintf(`{ "index" : { "_index": "%s", "_type": "%s", "_id": "%s" }}`, hit.Index, hit.Type, hit.ID)
+					queryBytes, err := json.Marshal(hit.Source)
+					if err != nil {
+						return Empty{}, fail.Wrap(err)
+					}
+					bulkQuery = bulkQuery + metaData + "\n" + string(queryBytes) + "\n"
+				}
+
+				err = e.esBaseClient.BulkIndex(ctx, indexName, bulkQuery)
+				if err != nil {
+					return Empty{}, fail.Wrap(err)
+				}
+
+				fmt.Printf("Done copy search after %s\n", lastID)
+
+				hitsSize := len(searchResult.Hits.Hits)
+				if hitsSize == 0 {
+					break
+				}
+				lastID = searchResult.Hits.Hits[hitsSize-1].ID
+			}
+
+			srcCnt, err := remoteClient.CountIndex(cctx, indexName)
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+			dstCnt, err := e.esBaseClient.CountIndex(ctx, indexName)
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+
+			if srcCnt.Num != dstCnt.Num {
+				e.esBaseClient.DeleteIndex(ctx, indexName)
+				return Empty{}, fail.New("Failed to copy index(Not correct count)")
+			}
+
+			// NOTE: When different version of ES, Its correct?
+			srcMapping, err := remoteClient.GetMapping(cctx, indexName)
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+			dstMapping, err := e.esBaseClient.GetMapping(ctx, indexName)
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+
+			if srcMapping.String() != dstMapping.String() {
+				e.esBaseClient.DeleteIndex(ctx, indexName)
+				return Empty{}, fail.New("Failed to copy index(Not correct mapping)")
+			}
+
+			return Empty{}, nil
 		}
 	}
 

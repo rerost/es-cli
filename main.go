@@ -61,26 +61,14 @@ func main() {
 		}
 
 		// Params
-		_host := cliContext.String("host")
-		if _host != "" {
-			ctx = context.WithValue(ctx, setting.SettingKey("host"), _host)
-		}
-		_port := cliContext.String("port")
-		if _port != "" {
-			ctx = context.WithValue(ctx, setting.SettingKey("port"), _port)
-		}
-		_type := cliContext.String("type")
-		if _type != "" {
-			ctx = context.WithValue(ctx, setting.SettingKey("type"), _type)
-		}
-		_user := cliContext.String("user")
-		if _user != "" {
-			ctx = context.WithValue(ctx, setting.SettingKey("user"), _user)
-		}
-		_pass := cliContext.String("pass")
-		if _pass != "" {
-			ctx = context.WithValue(ctx, setting.SettingKey("pass"), cliContext.String("pass"))
-		}
+		ctx = setting.ContextWithOptions(
+			ctx,
+			cliContext.String("host"),
+			cliContext.String("port"),
+			cliContext.String("type"),
+			cliContext.String("user"),
+			cliContext.String("pass"),
+		)
 
 		ctx = context.WithValue(ctx, setting.SettingKey("insecure"), cliContext.Bool("insecure"))
 		var httpClient *http.Client
@@ -115,7 +103,7 @@ func main() {
 		}
 		target := head
 
-		e := executer.NewExecuter(esBaseClient)
+		e := executer.NewExecuter(esBaseClient, httpClient)
 		result, err := e.Run(ctx, operation, target, args)
 
 		if err != nil && fail.Unwrap(err).Code == "Invalid arguments" {
