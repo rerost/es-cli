@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/rerost/es-cli/infra/es"
-	"github.com/rerost/es-cli/setting"
 	"github.com/srvc/fail"
 )
 
@@ -122,12 +121,6 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 	if !pong.OK {
 		return Empty{}, fail.New("Connection Failed")
 	}
-
-	version, err := e.esBaseClient.Version(ctx)
-	if err != nil {
-		return Empty{}, err
-	}
-	ctx = context.WithValue(ctx, setting.SettingKey("version"), version)
 
 	if target == "index" {
 		switch operation {
