@@ -138,11 +138,9 @@ type BaseClient interface {
 	// UpdateMapping(ctx context.Context, aliasName string, mappingJSON string) error
 
 	// Alias
-	CreateAlias(ctx context.Context, aliasName string, indexName string) error
-	DropAlias(ctx context.Context, aliasName string, opts []Opt) error
 	AddAlias(ctx context.Context, aliasName string, indexNames ...string) error
 	RemoveAlias(ctx context.Context, aliasName string, indexNames ...string) error
-	GetAlias(ctx context.Context, aliasName string) (Indices, error)
+	ListAlias(ctx context.Context, aliasName string) (Indices, error)
 
 	// Task
 	ListTask(ctx context.Context) (Tasks, error)
@@ -532,54 +530,6 @@ func (client baseClientImp) GetMapping(ctx context.Context, indexOrAliasName str
 }
 
 // Alias
-func (client baseClientImp) CreateAlias(ctx context.Context, aliasName string, indexName string) error {
-	createAliasJSON := fmt.Sprintf(`
-{
-	"actions": [
-		{
-			"add": {
-				"index": "%s",
-				"alias": "%s"
-			}
-		}
-	]
-}`, indexName, aliasName)
-
-	request, err := http.NewRequest(http.MethodPost, client.aliasURL(), bytes.NewBufferString(createAliasJSON))
-	request.Header.Set("Content-Type", "application/json")
-	if err != nil {
-		return fail.Wrap(err)
-	}
-
-	if client.User.Valid && client.Pass.Valid && client.User.String != "" && client.Pass.String != "" {
-		request.SetBasicAuth(client.User.String, client.Pass.String)
-	}
-
-	response, err := client.HttpClient.Do(request)
-	if err != nil {
-		return fail.Wrap(err)
-	}
-	defer response.Body.Close()
-
-	responseMap := map[string]interface{}{}
-
-	responseBody, err := ioutil.ReadAll(response.Body)
-	err = json.Unmarshal(responseBody, &responseMap)
-	if err != nil {
-		return fail.Wrap(err)
-	}
-
-	if errMsg, ok := responseMap["error"]; ok {
-		return fail.New(fmt.Sprintf("%v", errMsg))
-	}
-
-	return nil
-}
-
-// TODO implement
-func (client baseClientImp) DropAlias(ctx context.Context, aliasName string, opts []Opt) error {
-	return nil
-}
 func (client baseClientImp) AddAlias(ctx context.Context, aliasName string, indexNames ...string) error {
 	actions := []string{}
 	for _, indexName := range indexNames {
@@ -680,10 +630,41 @@ func (client baseClientImp) RemoveAlias(ctx context.Context, aliasName string, i
 
 	return nil
 }
+func (client baseClientImp) ListAlias(ctx context.Context, aliasName string) (Indices, error) {
+	indices := Indices{}
+	request, err := http.NewRequest(http.MethodGet, client.rawIndexURL(aliasName), bytes.NewBufferString(""))
+	if err != nil {
+		return indices, fail.Wrap(err)
+	}
 
-// TODO implement
-func (client baseClientImp) GetAlias(ctx context.Context, aliasName string) (Indices, error) {
-	return Indices{}, nil
+	if client.User.Valid && client.Pass.Valid && client.User.String != "" && client.Pass.String != "" {
+		request.SetBasicAuth(client.User.String, client.Pass.String)
+	}
+
+	response, err := client.HttpClient.Do(request)
+	if err != nil {
+		return indices, fail.Wrap(err)
+	}
+	responseMap := map[string]interface{}{}
+
+	responseBody, err := ioutil.ReadAll(response.Body)
+	err = json.Unmarshal(responseBody, &responseMap)
+	if err != nil {
+		return indices, fail.Wrap(err)
+	}
+	defer response.Body.Close()
+
+	if errMsg, ok := responseMap["error"]; ok {
+		return indices, fail.New(fmt.Sprintf("%v", errMsg))
+	}
+
+	indices = make(Indices, len(responseMap), len(responseMap))
+	i := 0
+	for indexName := range responseMap {
+		indices[i] = Index{Name: indexName}
+		i++
+	}
+	return indices, nil
 }
 
 // Task

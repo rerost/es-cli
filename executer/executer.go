@@ -95,6 +95,7 @@ func init() {
 		"alias": {
 			"add":    Command{ArgLen: 2, ArgType: MORE},
 			"remove": Command{ArgLen: 2, ArgType: MORE},
+			"list":   Command{ArgLen: 1, ArgType: EXACT},
 		},
 		"task": {
 			"list": Command{ArgLen: 0, ArgType: EXACT},
@@ -338,6 +339,8 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 			return Empty{}, e.esBaseClient.AddAlias(ctx, args[0], args[1:]...)
 		case "remove":
 			return Empty{}, e.esBaseClient.RemoveAlias(ctx, args[0], args[1:]...)
+		case "list":
+			return e.esBaseClient.ListAlias(ctx, args[0])
 		default:
 			return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid operation: %v", operation)), fail.WithCode("Invalid arguments"))
 		}
