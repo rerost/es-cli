@@ -288,23 +288,16 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 				detailJSON = string(body)
 			}
 
-			detail, err := e.esBaseClient.DetailIndex(ctx, aliasName)
+			indices, err := e.esBaseClient.ListAlias(ctx, aliasName)
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
-			indexDetails := map[string]interface{}{}
-			err = json.Unmarshal([]byte(detail.String()), &indexDetails)
-			if err != nil {
-				return Empty{}, fail.Wrap(err)
-			}
-			if len(indexDetails) != 1 {
+
+			if len(indices) != 1 {
 				return Empty{}, fail.New("Support only 1-alias 1-index case")
 			}
 
-			var oldIndexName string
-			for k := range indexDetails {
-				oldIndexName = k
-			}
+			oldIndexName := indices[0].Name
 
 			newIndexName := aliasName + time.Now().Format("_20060102_150405")
 			err = e.esBaseClient.CreateIndex(ctx, newIndexName, detailJSON)
