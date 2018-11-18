@@ -44,6 +44,7 @@ $ es-cli update detail <alias_name> # Read detail json by stdin
 ```
 $ es-cli add alias <alias_name> <index_name1> <index_name2> ...
 $ es-cli remove alias <alias_name> <index_name1> <index_name2> ...
+$ es-cli list alias <alias_name>
 ```
 
 ### Task API
