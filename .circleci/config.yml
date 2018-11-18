@@ -21,14 +21,6 @@ jobs:
         environment:
           http.host: '0.0.0.0'
           http.port: 5600
-      - image: docker.elastic.co/elasticsearch/elasticsearch:2.4.0
-        environment:
-          http.host: '0.0.0.0'
-          http.port: 2400
-      - image: docker.elastic.co/elasticsearch/elasticsearch:1.7.0
-        environment:
-          http.host: '0.0.0.0'
-          http.port: 1700
     working_directory: /go/src/github.com/rerost/es-cli
     steps:
       - checkout
