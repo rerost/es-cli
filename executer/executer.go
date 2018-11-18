@@ -87,9 +87,9 @@ func init() {
 			"count":   Command{ArgLen: 1, ArgType: EXACT},
 			"dump":    Command{ArgLen: 1, ArgType: EXACT},
 			"restore": Command{ArgLen: 1, ArgType: STDIN},
+			"detail":  Command{ArgLen: 1, ArgType: EXACT},
 		},
-		"mapping": {
-			"get":    Command{ArgLen: 1, ArgType: EXACT},
+		"detail": {
 			"update": Command{ArgLen: 2, ArgType: STDIN},
 		},
 		"alias": {
@@ -187,19 +187,19 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 		case "dump":
 			indexName := args[0]
 
-			mapping, err := e.esBaseClient.GetMapping(ctx, indexName)
+			detail, err := e.esBaseClient.DetailIndex(ctx, indexName)
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
-			mappingFile, err := os.Create(fmt.Sprintf("./%s_mapping.json", indexName))
+			detailFile, err := os.Create(fmt.Sprintf("./%s_detail.json", indexName))
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
-			_, err = mappingFile.Write([]byte(mapping))
+			_, err = detailFile.Write([]byte(detail.String()))
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
-			mappingFile.Close()
+			detailFile.Close()
 
 			dumpFile, err := os.Create(fmt.Sprintf("./%s_dump.ndjson", indexName))
 			if err != nil {
@@ -263,52 +263,52 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 				dump = body
 			}
 			return Empty{}, e.esBaseClient.BulkIndex(ctx, string(dump))
+		case "detail":
+			return e.esBaseClient.DetailIndex(ctx, args[0])
 		default:
 			return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid operation: %v", operation)), fail.WithCode("Invalid arguments"))
 		}
 	}
 
-	if target == "mapping" {
+	if target == "detail" {
 		switch operation {
-		case "get":
-			return e.esBaseClient.GetMapping(ctx, args[0])
 		case "update":
 			// Thinking only alias case
 			// Rethink when index
 			// TODO think index case
 
-			var aliasName, mappingJSON string
+			var aliasName, detailJSON string
 			aliasName = args[0]
 			if len(args) == CommandMap[target][operation].ArgLen {
-				mappingJSON = args[1]
+				detailJSON = args[1]
 			} else if len(args) == CommandMap[target][operation].ArgLen-1 {
 				body, err := ioutil.ReadAll(os.Stdin)
 				if err != nil {
 					return Empty{}, fail.Wrap(err)
 				}
-				mappingJSON = string(body)
+				detailJSON = string(body)
 			}
 
-			mapping, err := e.esBaseClient.GetMapping(ctx, aliasName)
+			detail, err := e.esBaseClient.DetailIndex(ctx, aliasName)
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
-			indexMappings := map[string]interface{}{}
-			err = json.Unmarshal([]byte(mapping.String()), &indexMappings)
+			indexDetails := map[string]interface{}{}
+			err = json.Unmarshal([]byte(detail.String()), &indexDetails)
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
-			if len(indexMappings) != 1 {
+			if len(indexDetails) != 1 {
 				return Empty{}, fail.New("Support only 1-alias 1-index case")
 			}
 
 			var oldIndexName string
-			for k := range indexMappings {
+			for k := range indexDetails {
 				oldIndexName = k
 			}
 
 			newIndexName := aliasName + time.Now().Format("_20060102_150405")
-			err = e.esBaseClient.CreateIndex(ctx, newIndexName, mappingJSON)
+			err = e.esBaseClient.CreateIndex(ctx, newIndexName, detailJSON)
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
@@ -366,6 +366,8 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 		switch operation {
 		case "get":
 			return e.esBaseClient.Version(ctx)
+		default:
+			return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid operation: %v", operation)), fail.WithCode("Invalid arguments"))
 		}
 	}
 
@@ -373,6 +375,8 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 		switch operation {
 		case "check":
 			return e.esBaseClient.Ping(ctx)
+		default:
+			return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid operation: %v", operation)), fail.WithCode("Invalid arguments"))
 		}
 	}
 
@@ -398,12 +402,12 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 				return Empty{}, fail.Wrap(err)
 			}
 
-			mapping, err := remoteClient.GetMapping(cctx, indexName)
+			detail, err := remoteClient.DetailIndex(cctx, indexName)
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
 
-			err = e.esBaseClient.CreateIndex(cctx, indexName, mapping.String())
+			err = e.esBaseClient.CreateIndex(cctx, indexName, detail.String())
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
@@ -471,10 +475,12 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 
 			if srcMapping.String() != dstMapping.String() {
 				e.esBaseClient.DeleteIndex(ctx, indexName)
-				return Empty{}, fail.New("Failed to copy index(Not correct mapping)")
+				return Empty{}, fail.New("Failed to copy index(Not correct detail)")
 			}
 
 			return Empty{}, nil
+		default:
+			return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid operation: %v", operation)), fail.WithCode("Invalid arguments"))
 		}
 	}
 
