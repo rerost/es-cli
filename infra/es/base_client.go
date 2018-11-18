@@ -189,7 +189,7 @@ func (client baseClientImp) ListIndex(ctx context.Context) (Indices, error) {
 		return indices, fail.Wrap(err)
 	}
 
-	if client.User.Valid && client.Pass.Valid {
+	if client.User.Valid && client.Pass.Valid && client.User.String != "" && client.Pass.String != "" {
 		request.SetBasicAuth(client.User.String, client.Pass.String)
 	}
 
@@ -225,7 +225,7 @@ func (client baseClientImp) CreateIndex(ctx context.Context, indexName string, m
 	}
 
 	request.Header.Add("Content-Type", "application/json")
-	if client.User.Valid && client.Pass.Valid {
+	if client.User.Valid && client.Pass.Valid && client.User.String != "" && client.Pass.String != "" {
 		request.SetBasicAuth(client.User.String, client.Pass.String)
 	}
 
@@ -265,7 +265,7 @@ func (client baseClientImp) CopyIndex(ctx context.Context, srcIndexName string, 
 		return Task{}, fail.Wrap(err)
 	}
 
-	if client.User.Valid && client.Pass.Valid {
+	if client.User.Valid && client.Pass.Valid && client.User.String != "" && client.Pass.String != "" {
 		request.SetBasicAuth(client.User.String, client.Pass.String)
 	}
 	request.Header.Add("Content-Type", "application/json")
@@ -303,7 +303,7 @@ func (client baseClientImp) DeleteIndex(ctx context.Context, indexName string) e
 		return fail.Wrap(err)
 	}
 
-	if client.User.Valid && client.Pass.Valid {
+	if client.User.Valid && client.Pass.Valid && client.User.String != "" && client.Pass.String != "" {
 		request.SetBasicAuth(client.User.String, client.Pass.String)
 	}
 
@@ -333,7 +333,7 @@ func (client baseClientImp) CountIndex(ctx context.Context, indexName string) (C
 		return Count{}, fail.Wrap(err)
 	}
 
-	if client.User.Valid && client.Pass.Valid {
+	if client.User.Valid && client.Pass.Valid && client.User.String != "" && client.Pass.String != "" {
 		request.SetBasicAuth(client.User.String, client.Pass.String)
 	}
 
@@ -368,7 +368,7 @@ func (client baseClientImp) SearchIndex(ctx context.Context, indexName string, q
 	}
 
 	request.Header.Set("Content-Type", "application/json")
-	if client.User.Valid && client.Pass.Valid {
+	if client.User.Valid && client.Pass.Valid && client.User.String != "" && client.Pass.String != "" {
 		request.SetBasicAuth(client.User.String, client.Pass.String)
 	}
 
@@ -405,7 +405,7 @@ func (client baseClientImp) BulkIndex(ctx context.Context, indexName string, bod
 	}
 
 	request.Header.Add("Content-Type", "application/x-ndjson")
-	if client.User.Valid && client.Pass.Valid {
+	if client.User.Valid && client.Pass.Valid && client.User.String != "" && client.Pass.String != "" {
 		request.SetBasicAuth(client.User.String, client.Pass.String)
 	}
 
@@ -444,7 +444,7 @@ func (client baseClientImp) GetMapping(ctx context.Context, indexOrAliasName str
 		return Mapping(""), fail.Wrap(err)
 	}
 
-	if client.User.Valid && client.Pass.Valid {
+	if client.User.Valid && client.Pass.Valid && client.User.String != "" && client.Pass.String != "" {
 		request.SetBasicAuth(client.User.String, client.Pass.String)
 	}
 
@@ -489,7 +489,7 @@ func (client baseClientImp) CreateAlias(ctx context.Context, aliasName string, i
 		return fail.Wrap(err)
 	}
 
-	if client.User.Valid && client.Pass.Valid {
+	if client.User.Valid && client.Pass.Valid && client.User.String != "" && client.Pass.String != "" {
 		request.SetBasicAuth(client.User.String, client.Pass.String)
 	}
 
@@ -544,7 +544,7 @@ func (client baseClientImp) AddAlias(ctx context.Context, aliasName string, inde
 		return fail.Wrap(err)
 	}
 
-	if client.User.Valid && client.Pass.Valid {
+	if client.User.Valid && client.Pass.Valid && client.User.String != "" && client.Pass.String != "" {
 		request.SetBasicAuth(client.User.String, client.Pass.String)
 	}
 
@@ -594,7 +594,7 @@ func (client baseClientImp) RemoveAlias(ctx context.Context, aliasName string, i
 		return fail.Wrap(err)
 	}
 
-	if client.User.Valid && client.Pass.Valid {
+	if client.User.Valid && client.Pass.Valid && client.User.String != "" && client.Pass.String != "" {
 		request.SetBasicAuth(client.User.String, client.Pass.String)
 	}
 
@@ -634,7 +634,7 @@ func (client baseClientImp) GetTask(ctx context.Context, taskID string) (Task, e
 		return Task{}, fail.Wrap(err)
 	}
 
-	if client.User.Valid && client.Pass.Valid {
+	if client.User.Valid && client.Pass.Valid && client.User.String != "" && client.Pass.String != "" {
 		request.SetBasicAuth(client.User.String, client.Pass.String)
 	}
 
@@ -670,7 +670,7 @@ func (client baseClientImp) Version(ctx context.Context) (Version, error) {
 		return Version{}, fail.Wrap(err)
 	}
 
-	if client.User.Valid && client.Pass.Valid {
+	if client.User.Valid && client.Pass.Valid && client.User.String != "" && client.Pass.String != "" {
 		request.SetBasicAuth(client.User.String, client.Pass.String)
 	}
 
@@ -714,7 +714,7 @@ func (client baseClientImp) Ping(ctx context.Context) (Pong, error) {
 		return Pong{OK: false}, fail.Wrap(err)
 	}
 
-	if client.User.Valid && client.Pass.Valid {
+	if client.User.Valid && client.Pass.Valid && client.User.String != "" && client.Pass.String != "" {
 		request.SetBasicAuth(client.User.String, client.Pass.String)
 	}
 
