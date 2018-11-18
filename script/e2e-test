@@ -10,13 +10,10 @@ function exec_only()
   eval "${cmd} list index" > /dev/null
   echo "# create index"
   eval "${cmd} create index test '{}'" > /dev/null
-  echo "# copy index"
-  eval "${cmd} copy index test test_copy" > /dev/null
   echo "# count index"
   eval "${cmd} count index test" > /dev/null
   echo "# delete index"
   eval "${cmd} delete index test"
-  eval "${cmd} delete index test_copy"
 
   ## detail
   echo "# update detail"
