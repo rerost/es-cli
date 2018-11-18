@@ -10,6 +10,7 @@ So I create this tool
 ## Term
 I said `details` is for `mappings`, `settings`, and `aliases`.
 Its for creating indecies.
+https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html
 
 ## Installation
 `go get -u github.com/rerost/es-cli`
