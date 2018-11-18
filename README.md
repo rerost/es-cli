@@ -29,6 +29,8 @@ $ es-cli create index <index_name> # Read detail json by stdin
 $ es-cli copy index <src_index_name> <dst_index_name>
 $ es-cli count index <index_name> # Return total count of documents
 $ es-cli delete index <index_name>
+$ es-cli dump index <index_name> # Dump details & docs
+$ es-cli restore index <index_name> # Insert docs from dumped doc file(Without details)
 $ es-cli detail index <index_name> # Get settings, alias, mappings for creat index
 ```
 
