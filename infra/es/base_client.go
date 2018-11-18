@@ -116,7 +116,7 @@ type BaseClient interface {
 	DeleteIndex(ctx context.Context, indexName string) error
 	CountIndex(ctx context.Context, indexName string) (Count, error)
 	SearchIndex(ctx context.Context, indexName string, query string) (SearchResponse, error)
-	BulkIndex(ctx context.Context, indexName string, body string) error
+	BulkIndex(ctx context.Context, body string) error
 
 	// Mapping
 	GetMapping(ctx context.Context, indexOrAliasName string) (Mapping, error)
@@ -398,7 +398,7 @@ func (client baseClientImp) SearchIndex(ctx context.Context, indexName string, q
 
 	return searchResponse, nil
 }
-func (client baseClientImp) BulkIndex(ctx context.Context, indexName string, body string) error {
+func (client baseClientImp) BulkIndex(ctx context.Context, body string) error {
 	request, err := http.NewRequest(http.MethodPost, client.bulkURL(), bytes.NewBufferString(body))
 	if err != nil {
 		return fail.Wrap(err)

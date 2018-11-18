@@ -38,6 +38,10 @@ const (
 	STDIN
 )
 
+const (
+	BATCH_SIZE = 1000
+)
+
 func (c Command) Validate(args Args) error {
 	if c.ArgType == EXACT {
 		if len(args) != c.ArgLen {
@@ -76,11 +80,13 @@ var CommandMap map[string]map[string]Command
 func init() {
 	CommandMap = map[string]map[string]Command{
 		"index": {
-			"list":   Command{ArgLen: 0, ArgType: EXACT},
-			"create": Command{ArgLen: 2, ArgType: STDIN},
-			"delete": Command{ArgLen: 1, ArgType: EXACT},
-			"copy":   Command{ArgLen: 2, ArgType: EXACT},
-			"count":  Command{ArgLen: 1, ArgType: EXACT},
+			"list":    Command{ArgLen: 0, ArgType: EXACT},
+			"create":  Command{ArgLen: 2, ArgType: STDIN},
+			"delete":  Command{ArgLen: 1, ArgType: EXACT},
+			"copy":    Command{ArgLen: 2, ArgType: EXACT},
+			"count":   Command{ArgLen: 1, ArgType: EXACT},
+			"dump":    Command{ArgLen: 1, ArgType: EXACT},
+			"restore": Command{ArgLen: 1, ArgType: STDIN},
 		},
 		"mapping": {
 			"get":    Command{ArgLen: 1, ArgType: EXACT},
@@ -178,6 +184,85 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 			return Empty{}, nil
 		case "count":
 			return e.esBaseClient.CountIndex(ctx, args[0])
+		case "dump":
+			indexName := args[0]
+
+			mapping, err := e.esBaseClient.GetMapping(ctx, indexName)
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+			mappingFile, err := os.Create(fmt.Sprintf("./%s_mapping.json", indexName))
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+			_, err = mappingFile.Write([]byte(mapping))
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+			mappingFile.Close()
+
+			dumpFile, err := os.Create(fmt.Sprintf("./%s_dump.ndjson", indexName))
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+			defer dumpFile.Close()
+
+			lastID := ""
+			for {
+				query := fmt.Sprintf(`{"query": {"match_all": {}}, "size": %d, "sort": [{"_id": "desc"}]}`, BATCH_SIZE)
+				if lastID != "" {
+					fmt.Printf("Copying search after %s\n", lastID)
+					query = fmt.Sprintf(`{"query": {"match_all": {}}, "size": %d, "sort": [{"_id": "desc"}], "search_after": ["%s"]}`, BATCH_SIZE, lastID)
+				}
+				searchResult, err := e.esBaseClient.SearchIndex(ctx, indexName, query)
+
+				if err != nil {
+					return Empty{}, fail.Wrap(err)
+				}
+
+				for _, hit := range searchResult.Hits.Hits {
+					metaData := fmt.Sprintf(`{ "index" : { "_index": "%s", "_type": "%s", "_id": "%s" }}`, hit.Index, hit.Type, hit.ID)
+					queryBytes, err := json.Marshal(hit.Source)
+					if err != nil {
+						return Empty{}, fail.Wrap(err)
+					}
+					_, err = dumpFile.Write([]byte(metaData + "\n" + string(queryBytes) + "\n"))
+					if err != nil {
+						return Empty{}, fail.Wrap(err)
+					}
+				}
+
+				hitsSize := len(searchResult.Hits.Hits)
+				if hitsSize == 0 {
+					break
+				}
+
+				lastID = searchResult.Hits.Hits[hitsSize-1].ID
+			}
+
+			return Empty{}, nil
+		case "restore":
+			dump := []byte{}
+			if len(args) == 0 {
+				body, err := ioutil.ReadAll(os.Stdin)
+				if err != nil {
+					return Empty{}, fail.Wrap(err)
+				}
+				dump = body
+			} else {
+				dumpFile, err := os.Open(args[0])
+				if err != nil {
+					dumpFile.Close()
+					return Empty{}, fail.Wrap(err)
+				}
+				body, err := ioutil.ReadAll(dumpFile)
+				dumpFile.Close()
+				if err != nil {
+					return Empty{}, fail.Wrap(err)
+				}
+				dump = body
+			}
+			return Empty{}, e.esBaseClient.BulkIndex(ctx, string(dump))
 		default:
 			return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid operation: %v", operation)), fail.WithCode("Invalid arguments"))
 		}
@@ -294,7 +379,6 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 	if target == "remote" {
 		switch operation {
 		case "copy":
-			batchSize := 1000
 			host := args[0]
 			port := args[1]
 			indexName := args[2]
@@ -326,10 +410,10 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 
 			lastID := ""
 			for {
-				query := fmt.Sprintf(`{"query": {"match_all": {}}, "size": %d, "sort": [{"_id": "desc"}]}`, batchSize)
+				query := fmt.Sprintf(`{"query": {"match_all": {}}, "size": %d, "sort": [{"_id": "desc"}]}`, BATCH_SIZE)
 				if lastID != "" {
 					fmt.Printf("Copying search after %s\n", lastID)
-					query = fmt.Sprintf(`{"query": {"match_all": {}}, "size": %d, "sort": [{"_id": "desc"}], "search_after": ["%s"]}`, batchSize, lastID)
+					query = fmt.Sprintf(`{"query": {"match_all": {}}, "size": %d, "sort": [{"_id": "desc"}], "search_after": ["%s"]}`, BATCH_SIZE, lastID)
 				}
 				searchResult, err := remoteClient.SearchIndex(cctx, indexName, query)
 
@@ -347,7 +431,7 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 					bulkQuery = bulkQuery + metaData + "\n" + string(queryBytes) + "\n"
 				}
 
-				err = e.esBaseClient.BulkIndex(ctx, indexName, bulkQuery)
+				err = e.esBaseClient.BulkIndex(ctx, bulkQuery)
 				if err != nil {
 					return Empty{}, fail.Wrap(err)
 				}
