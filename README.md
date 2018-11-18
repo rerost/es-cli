@@ -7,9 +7,9 @@ It's high useage elasticsearch's operation wrapper tool.
 For example, creating index and add/remove alias operations is frequently performed, but JSON API is too complicated(I can not remember).
 So I create this tool
 
-Before Elasticsearch 2.3, Can not use
-- es-cli update mapping
-- es-cli copy index
+## Term
+I said `details` is for `mappings`, `settings`, and `aliases`.
+Its for creating indecies.
 
 ## Installation
 `go get -u github.com/rerost/es-cli`
@@ -24,18 +24,18 @@ $ es-cli [--host=HOST] [--port=PORT] [--user=BASIC_AUTH_USER] [--pass=BASIC_AUTH
 ### Index API
 ```
 $ es-cli list index
-$ es-cli create index <index_name> <mapping_json>
-$ es-cli create index <index_name> # Read mapping json by stdin
+$ es-cli create index <index_name> <detail_json>
+$ es-cli create index <index_name> # Read detail json by stdin
 $ es-cli copy index <src_index_name> <dst_index_name>
 $ es-cli count index <index_name> # Return total count of documents
 $ es-cli delete index <index_name>
+$ es-cli detail index <index_name> # Get settings, alias, mappings for creat index
 ```
 
 ### Mapping API
 ```
-$ es-cli get mapping <index_name or alias_name>
-$ es-cli update mapping <alias_name> <mapping_json> # Zero downtime(without write) update mapping
-$ es-cli update mapping <alias_name> # Read mapping json by stdin
+$ es-cli update detail <alias_name> <detail_json> # Zero downtime(without write) update detail
+$ es-cli update detail <alias_name> # Read detail json by stdin
 ```
 
 ### Alias API
