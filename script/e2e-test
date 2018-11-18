@@ -1,20 +1,8 @@
 #!/bin/bash
 
-before_do()
+function exec_only()
 {
-  # Install elasticsearch
-  docker run -p 9200:9200 -d --name=test-es docker.elastic.co/elasticsearch/elasticsearch:6.2.0 
-}
-after_do()
-{
-  docker stop test-es
-}
-
-cmd="go run main.go"
-
-exec_only()
-{
-  before_do
+  cmd="go run main.go --port $1 "
 
   ## Index
   echo "# list index"
@@ -59,9 +47,10 @@ exec_only()
   echo "# list task"
   eval "${cmd} list task" > /dev/null
   echo "# get task"
-  # TODO
-
-  after_do
 }
 
-exec_only
+ports=('6500')
+for port in ${ports[@]}
+do
+  exec_only $port
+done
