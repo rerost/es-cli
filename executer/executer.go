@@ -271,10 +271,8 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 		}
 	}
 
-	if target == "mapping" {
+	if target == "detail" {
 		switch operation {
-		case "get":
-			return e.esBaseClient.GetMapping(ctx, args[0])
 		case "update":
 			// Thinking only alias case
 			// Rethink when index
@@ -405,12 +403,12 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 				return Empty{}, fail.Wrap(err)
 			}
 
-			mapping, err := remoteClient.GetMapping(cctx, indexName)
+			detail, err := remoteClient.DetailIndex(cctx, indexName)
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
 
-			err = e.esBaseClient.CreateIndex(cctx, indexName, mapping.String())
+			err = e.esBaseClient.CreateIndex(cctx, indexName, detail.String())
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
