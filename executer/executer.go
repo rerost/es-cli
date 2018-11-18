@@ -93,8 +93,6 @@ func init() {
 			"update": Command{ArgLen: 2, ArgType: STDIN},
 		},
 		"alias": {
-			"create": Command{ArgLen: 2, ArgType: EXACT},
-			"drop":   Command{ArgLen: 2, ArgType: EXACT},
 			"add":    Command{ArgLen: 2, ArgType: MORE},
 			"remove": Command{ArgLen: 2, ArgType: MORE},
 		},
@@ -336,12 +334,6 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 
 	if target == "alias" {
 		switch operation {
-		case "create":
-			return Empty{}, e.esBaseClient.CreateAlias(ctx, args[0], args[1])
-		case "drop":
-			// TODO implement
-			return Empty{}, nil
-			// return Empty{}, e.esBaseClient.DropAlias(ctx, args[0], args[1])
 		case "add":
 			return Empty{}, e.esBaseClient.AddAlias(ctx, args[0], args[1:]...)
 		case "remove":
