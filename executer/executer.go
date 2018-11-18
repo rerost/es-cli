@@ -87,6 +87,7 @@ func init() {
 			"count":   Command{ArgLen: 1, ArgType: EXACT},
 			"dump":    Command{ArgLen: 1, ArgType: EXACT},
 			"restore": Command{ArgLen: 1, ArgType: STDIN},
+			"detail":  Command{ArgLen: 1, ArgType: EXACT},
 		},
 		"mapping": {
 			"get":    Command{ArgLen: 1, ArgType: EXACT},
@@ -263,6 +264,8 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 				dump = body
 			}
 			return Empty{}, e.esBaseClient.BulkIndex(ctx, string(dump))
+		case "detail":
+			return e.esBaseClient.DetailIndex(ctx, args[0])
 		default:
 			return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid operation: %v", operation)), fail.WithCode("Invalid arguments"))
 		}
@@ -366,6 +369,8 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 		switch operation {
 		case "get":
 			return e.esBaseClient.Version(ctx)
+		default:
+			return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid operation: %v", operation)), fail.WithCode("Invalid arguments"))
 		}
 	}
 
@@ -373,6 +378,8 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 		switch operation {
 		case "check":
 			return e.esBaseClient.Ping(ctx)
+		default:
+			return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid operation: %v", operation)), fail.WithCode("Invalid arguments"))
 		}
 	}
 
@@ -475,6 +482,8 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 			}
 
 			return Empty{}, nil
+		default:
+			return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid operation: %v", operation)), fail.WithCode("Invalid arguments"))
 		}
 	}
 

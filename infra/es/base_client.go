@@ -72,6 +72,20 @@ type Version struct {
 	Number string `json:"number"`
 }
 
+type IndexDetail struct {
+	Setting interface{} `json:"settings"`
+	Alias   interface{} `json:"aliases"`
+	Mapping interface{} `json:"mappings"`
+}
+
+func (i IndexDetail) String() string {
+	body, err := json.Marshal(i)
+	if err != nil {
+		panic(err)
+	}
+	return string(body)
+}
+
 func (c Version) String() string {
 	return c.Number
 }
@@ -117,6 +131,7 @@ type BaseClient interface {
 	CountIndex(ctx context.Context, indexName string) (Count, error)
 	SearchIndex(ctx context.Context, indexName string, query string) (SearchResponse, error)
 	BulkIndex(ctx context.Context, body string) error
+	DetailIndex(ctx context.Context, indexName string) (IndexDetail, error)
 
 	// Mapping
 	GetMapping(ctx context.Context, indexOrAliasName string) (Mapping, error)
@@ -435,6 +450,41 @@ func (client baseClientImp) BulkIndex(ctx context.Context, body string) error {
 	}
 
 	return nil
+}
+
+func (client baseClientImp) DetailIndex(ctx context.Context, indexName string) (IndexDetail, error) {
+	request, err := http.NewRequest(http.MethodGet, client.detailURL(indexName), bytes.NewBufferString(""))
+	indexDetail := IndexDetail{}
+	if err != nil {
+		return indexDetail, fail.Wrap(err)
+	}
+
+	if client.User.Valid && client.Pass.Valid && client.User.String != "" && client.Pass.String != "" {
+		request.SetBasicAuth(client.User.String, client.Pass.String)
+	}
+
+	response, err := client.HttpClient.Do(request)
+	if err != nil {
+		return indexDetail, fail.Wrap(err)
+	}
+	defer response.Body.Close()
+
+	responseMap := map[string]interface{}{}
+
+	responseBody, err := ioutil.ReadAll(response.Body)
+	err = json.Unmarshal(responseBody, &responseMap)
+	if err != nil {
+		return indexDetail, fail.Wrap(err)
+	}
+
+	if errMsg, ok := responseMap["error"]; ok {
+		return indexDetail, fail.New(fmt.Sprintf("%v", errMsg))
+	}
+
+	indexDetail.Mapping = responseMap["mappings"]
+	indexDetail.Setting = responseMap["settings"]
+	indexDetail.Alias = responseMap["aliases"]
+	return indexDetail, nil
 }
 
 // Mapping
@@ -770,6 +820,9 @@ func (client baseClientImp) searchURL(indexName string) string {
 }
 func (client baseClientImp) bulkURL() string {
 	return client.baseURL() + "/_bulk"
+}
+func (client baseClientImp) detailURL(indexName string) string {
+	return client.baseURL() + "/" + indexName
 }
 
 func addParams(req *http.Request, params map[string]string) *http.Request {
