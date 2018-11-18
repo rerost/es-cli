@@ -481,9 +481,21 @@ func (client baseClientImp) DetailIndex(ctx context.Context, indexName string) (
 		return indexDetail, fail.New(fmt.Sprintf("%v", errMsg))
 	}
 
-	indexDetail.Mapping = responseMap["mappings"]
-	indexDetail.Setting = responseMap["settings"]
-	indexDetail.Alias = responseMap["aliases"]
+	detail := responseMap[indexName]
+	jdetail, err := json.Marshal(detail)
+	if err != nil {
+		return indexDetail, fail.Wrap(err)
+	}
+
+	detailMap := map[string]interface{}{}
+	err = json.Unmarshal(jdetail, &detailMap)
+	if err != nil {
+		return indexDetail, fail.Wrap(err)
+	}
+
+	indexDetail.Mapping = detailMap["mappings"]
+	indexDetail.Setting = detailMap["settings"]
+	indexDetail.Alias = detailMap["aliases"]
 	return indexDetail, nil
 }
 
