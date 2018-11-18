@@ -38,7 +38,7 @@ function exec_only()
   echo "# get task"
 }
 
-ports=('9201')
+ports=('6500')
 for port in ${ports[@]}
 do
   exec_only $port
