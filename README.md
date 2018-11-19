@@ -25,7 +25,7 @@ $ es-cli [--host=HOST] [--port=PORT] [--user=BASIC_AUTH_USER] [--pass=BASIC_AUTH
 ### Index API
 ```
 $ es-cli list index
-$ es-cli create index <index_name> <detail_json>
+$ es-cli create index <index_name> <detail_json_file>
 $ es-cli create index <index_name> # Read detail json by stdin
 $ es-cli copy index <src_index_name> <dst_index_name>
 $ es-cli count index <index_name> # Return total count of documents
@@ -39,7 +39,7 @@ $ es-cli restore index # Insert docs from dumped doc file(Without details)
 ### Detail API
 ```
 $ es-cli get detail <index_name> # Get settings, alias, mappings for creat index
-$ es-cli update detail <alias_name> <detail_json> # Zero downtime(without write) update detail
+$ es-cli update detail <alias_name> <detail_json_file> # Zero downtime(without write) update detail
 $ es-cli update detail <alias_name> # Read detail json by stdin
 ```
 
