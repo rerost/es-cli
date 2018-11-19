@@ -9,22 +9,26 @@ function exec_only()
   echo "# list index"
   eval "${cmd} list index" > /dev/null
   echo "# create index"
-  eval "${cmd} create index test '{}'" > /dev/null
+  eval "${cmd} create index test 'script/test_mapping.json'" > /dev/null
   echo "# count index"
   eval "${cmd} count index test" > /dev/null
   echo "# delete index"
   eval "${cmd} delete index test"
 
-  ## detail
+  ## Detail
+  echo "# detail get"
+  eval "${cmd} create index test 'script/test_mapping.json'" > /dev/null
+  eval "${cmd} get detail test" > /dev/null
+  eval "${cmd} delete index test" > /dev/null
   echo "# update detail"
-  eval "${cmd} create index test '{}'" > /dev/null
+  eval "${cmd} create index test 'script/test_mapping.json'" > /dev/null
   eval "${cmd} add alias alias_test test" > /dev/null
-  eval "${cmd} update detail alias_test '{}'" > /dev/null
+  eval "${cmd} update detail alias_test 'script/test_mapping.json'" > /dev/null
 
   ## Alias
   echo "# add alias"
-  eval "${cmd} create index test1 '{}'" > /dev/null
-  eval "${cmd} create index test2 '{}'" > /dev/null
+  eval "${cmd} create index test1 'script/test_mapping.json'" > /dev/null
+  eval "${cmd} create index test2 'script/test_mapping.json'" > /dev/null
   eval "${cmd} add alias test_alias test1 test2" > /dev/null
   echo "# list alias"
   eval "${cmd} list alias test_alias" > /dev/null

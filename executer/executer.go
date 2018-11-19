@@ -1,12 +1,14 @@
 package executer
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/rerost/es-cli/infra/es"
@@ -133,15 +135,21 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 		case "list":
 			return e.esBaseClient.ListIndex(ctx)
 		case "create":
+			var fp *os.File
 			if len(args) == CommandMap[target][operation].ArgLen {
-				return Empty{}, e.esBaseClient.CreateIndex(ctx, args[0], args[1])
-			} else if len(args) == CommandMap[target][operation].ArgLen-1 {
-				body, err := ioutil.ReadAll(os.Stdin)
+				fp, err = os.Open(args[1])
 				if err != nil {
 					return Empty{}, fail.Wrap(err)
 				}
-				return Empty{}, e.esBaseClient.CreateIndex(ctx, args[0], string(body))
+			} else if len(args) == CommandMap[target][operation].ArgLen-1 {
+				fp = os.Stdin
 			}
+			body, err := ioutil.ReadAll(fp)
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+
+			return Empty{}, e.esBaseClient.CreateIndex(ctx, args[0], string(body))
 		case "delete":
 			return Empty{}, e.esBaseClient.DeleteIndex(ctx, args[0])
 		case "copy":
@@ -241,27 +249,43 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 
 			return Empty{}, nil
 		case "restore":
-			dump := []byte{}
+			fmt.Println("**Waring** Prease create index before restore")
+			var fp *os.File
 			if len(args) == 0 {
-				body, err := ioutil.ReadAll(os.Stdin)
-				if err != nil {
-					return Empty{}, fail.Wrap(err)
-				}
-				dump = body
+				fp = os.Stdin
 			} else {
-				dumpFile, err := os.Open(args[0])
-				if err != nil {
-					dumpFile.Close()
-					return Empty{}, fail.Wrap(err)
-				}
-				body, err := ioutil.ReadAll(dumpFile)
-				dumpFile.Close()
+				fp, err = os.Open(args[0])
 				if err != nil {
 					return Empty{}, fail.Wrap(err)
 				}
-				dump = body
 			}
-			return Empty{}, e.esBaseClient.BulkIndex(ctx, string(dump))
+			defer fp.Close()
+
+			scanner := bufio.NewScanner(fp)
+			scanner.Split(bufio.ScanLines)
+
+			// twice, because metadata + document pair
+			buf := make([]string, BATCH_SIZE*2, BATCH_SIZE*2)
+			i := 0
+			batchTime := 1
+			for scanner.Scan() {
+				buf[i] = scanner.Text()
+
+				if i == len(buf)-1 {
+					fmt.Printf("Copied %d\n", len(buf)/2*batchTime)
+					err := e.esBaseClient.BulkIndex(ctx, strings.Join(buf, "\n")+"\n")
+					if err != nil {
+						return Empty{}, fail.Wrap(err)
+					}
+
+					buf = make([]string, len(buf), len(buf))
+					i = 0
+					batchTime++
+				} else {
+					i++
+				}
+			}
+			return Empty{}, nil
 		default:
 			return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid operation: %v", operation)), fail.WithCode("Invalid arguments"))
 		}
@@ -278,15 +302,22 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 
 			var aliasName, detailJSON string
 			aliasName = args[0]
+			var fp *os.File
 			if len(args) == CommandMap[target][operation].ArgLen {
-				detailJSON = args[1]
-			} else if len(args) == CommandMap[target][operation].ArgLen-1 {
-				body, err := ioutil.ReadAll(os.Stdin)
+				fp, err = os.Open(args[1])
 				if err != nil {
 					return Empty{}, fail.Wrap(err)
 				}
-				detailJSON = string(body)
+			} else if len(args) == CommandMap[target][operation].ArgLen-1 {
+				fp = os.Stdin
 			}
+
+			body, err := ioutil.ReadAll(fp)
+			fp.Close()
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+			detailJSON = string(body)
 
 			indices, err := e.esBaseClient.ListAlias(ctx, aliasName)
 			if err != nil {
@@ -452,16 +483,16 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 			}
 
 			// NOTE: When different version of ES, Its correct?
-			srcMapping, err := remoteClient.GetMapping(cctx, indexName)
+			srcDetail, err := remoteClient.DetailIndex(cctx, indexName)
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
-			dstMapping, err := e.esBaseClient.GetMapping(ctx, indexName)
+			dstDetail, err := e.esBaseClient.DetailIndex(ctx, indexName)
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
 
-			if srcMapping.String() != dstMapping.String() {
+			if srcDetail.String() != dstDetail.String() {
 				e.esBaseClient.DeleteIndex(ctx, indexName)
 				return Empty{}, fail.New("Failed to copy index(Not correct detail)")
 			}
