@@ -32,12 +32,6 @@ func (is Indices) String() string {
 	return strings.Join(result, "\n")
 }
 
-type Mapping string
-
-func (m Mapping) String() string {
-	return string(m)
-}
-
 type Opt struct{}
 type Alias struct{}
 type Task struct {
@@ -131,11 +125,9 @@ type BaseClient interface {
 	CountIndex(ctx context.Context, indexName string) (Count, error)
 	SearchIndex(ctx context.Context, indexName string, query string) (SearchResponse, error)
 	BulkIndex(ctx context.Context, body string) error
-	DetailIndex(ctx context.Context, indexName string) (IndexDetail, error)
 
-	// Mapping
-	GetMapping(ctx context.Context, indexOrAliasName string) (Mapping, error)
-	// UpdateMapping(ctx context.Context, aliasName string, mappingJSON string) error
+	// Detail
+	DetailIndex(ctx context.Context, indexName string) (IndexDetail, error)
 
 	// Alias
 	AddAlias(ctx context.Context, aliasName string, indexNames ...string) error
@@ -232,7 +224,7 @@ func (client baseClientImp) ListIndex(ctx context.Context) (Indices, error) {
 	return indices, nil
 }
 func (client baseClientImp) CreateIndex(ctx context.Context, indexName string, mappingJSON string) error {
-	request, err := http.NewRequest(http.MethodPost, client.indexURL(indexName), bytes.NewBufferString(mappingJSON))
+	request, err := http.NewRequest(http.MethodPut, client.rawIndexURL(indexName), bytes.NewBufferString(mappingJSON))
 	if err != nil {
 		return fail.Wrap(err)
 	}
@@ -495,38 +487,6 @@ func (client baseClientImp) DetailIndex(ctx context.Context, indexName string) (
 	indexDetail.Setting = detailMap["settings"]
 	indexDetail.Alias = detailMap["aliases"]
 	return indexDetail, nil
-}
-
-// Mapping
-func (client baseClientImp) GetMapping(ctx context.Context, indexOrAliasName string) (Mapping, error) {
-	request, err := http.NewRequest(http.MethodGet, client.mappingURL(indexOrAliasName), bytes.NewBufferString(""))
-	if err != nil {
-		return Mapping(""), fail.Wrap(err)
-	}
-
-	if client.User.Valid && client.Pass.Valid && client.User.String != "" && client.Pass.String != "" {
-		request.SetBasicAuth(client.User.String, client.Pass.String)
-	}
-
-	response, err := client.HttpClient.Do(request)
-	if err != nil {
-		return Mapping(""), fail.Wrap(err)
-	}
-	defer response.Body.Close()
-
-	responseMap := map[string]interface{}{}
-
-	responseBody, err := ioutil.ReadAll(response.Body)
-	err = json.Unmarshal(responseBody, &responseMap)
-	if err != nil {
-		return Mapping(""), fail.Wrap(err)
-	}
-
-	if errMsg, ok := responseMap["error"]; ok {
-		return Mapping(""), fail.New(fmt.Sprintf("%v", errMsg))
-	}
-
-	return Mapping(string(responseBody)), nil
 }
 
 // Alias

@@ -452,16 +452,16 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 			}
 
 			// NOTE: When different version of ES, Its correct?
-			srcMapping, err := remoteClient.GetMapping(cctx, indexName)
+			srcDetail, err := remoteClient.DetailIndex(cctx, indexName)
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
-			dstMapping, err := e.esBaseClient.GetMapping(ctx, indexName)
+			dstDetail, err := e.esBaseClient.DetailIndex(ctx, indexName)
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
 
-			if srcMapping.String() != dstMapping.String() {
+			if srcDetail.String() != dstDetail.String() {
 				e.esBaseClient.DeleteIndex(ctx, indexName)
 				return Empty{}, fail.New("Failed to copy index(Not correct detail)")
 			}

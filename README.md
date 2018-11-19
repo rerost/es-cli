@@ -36,7 +36,7 @@ $ es-cli restore index # Insert docs from dumped doc file(Without details)
 ```
 
 
-### Mapping API
+### Detail API
 ```
 $ es-cli get detail <index_name> # Get settings, alias, mappings for creat index
 $ es-cli update detail <alias_name> <detail_json> # Zero downtime(without write) update detail
