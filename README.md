@@ -31,8 +31,10 @@ $ es-cli copy index <src_index_name> <dst_index_name>
 $ es-cli count index <index_name> # Return total count of documents
 $ es-cli delete index <index_name>
 $ es-cli dump index <index_name> # Dump details & docs
-$ es-cli restore index <index_name> # Insert docs from dumped doc file(Without details)
+$ es-cli restore index <dumped_file> # Insert docs from dumped doc file(Without details)
+$ es-cli restore index # Insert docs from dumped doc file(Without details)
 ```
+
 
 ### Mapping API
 ```
