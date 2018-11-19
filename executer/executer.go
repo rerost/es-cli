@@ -284,15 +284,22 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 
 			var aliasName, detailJSON string
 			aliasName = args[0]
+			var fp *os.File
 			if len(args) == CommandMap[target][operation].ArgLen {
-				detailJSON = args[1]
-			} else if len(args) == CommandMap[target][operation].ArgLen-1 {
-				body, err := ioutil.ReadAll(os.Stdin)
+				fp, err = os.Open(args[1])
 				if err != nil {
 					return Empty{}, fail.Wrap(err)
 				}
-				detailJSON = string(body)
+			} else if len(args) == CommandMap[target][operation].ArgLen-1 {
+				fp = os.Stdin
 			}
+
+			body, err := ioutil.ReadAll(fp)
+			fp.Close()
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+			detailJSON = string(body)
 
 			indices, err := e.esBaseClient.ListAlias(ctx, aliasName)
 			if err != nil {
