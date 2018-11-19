@@ -1,12 +1,14 @@
 package executer
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/rerost/es-cli/infra/es"
@@ -247,27 +249,43 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 
 			return Empty{}, nil
 		case "restore":
-			dump := []byte{}
+			fmt.Println("**Waring** Prease create index before restore")
+			var fp *os.File
 			if len(args) == 0 {
-				body, err := ioutil.ReadAll(os.Stdin)
-				if err != nil {
-					return Empty{}, fail.Wrap(err)
-				}
-				dump = body
+				fp = os.Stdin
 			} else {
-				dumpFile, err := os.Open(args[0])
-				if err != nil {
-					dumpFile.Close()
-					return Empty{}, fail.Wrap(err)
-				}
-				body, err := ioutil.ReadAll(dumpFile)
-				dumpFile.Close()
+				fp, err = os.Open(args[0])
 				if err != nil {
 					return Empty{}, fail.Wrap(err)
 				}
-				dump = body
 			}
-			return Empty{}, e.esBaseClient.BulkIndex(ctx, string(dump))
+			defer fp.Close()
+
+			scanner := bufio.NewScanner(fp)
+			scanner.Split(bufio.ScanLines)
+
+			// twice, because metadata + document pair
+			buf := make([]string, BATCH_SIZE*2, BATCH_SIZE*2)
+			i := 0
+			batchTime := 1
+			for scanner.Scan() {
+				buf[i] = scanner.Text()
+
+				if i == len(buf)-1 {
+					fmt.Printf("Copied %d\n", len(buf)/2*batchTime)
+					err := e.esBaseClient.BulkIndex(ctx, strings.Join(buf, "\n")+"\n")
+					if err != nil {
+						return Empty{}, fail.Wrap(err)
+					}
+
+					buf = make([]string, len(buf), len(buf))
+					i = 0
+					batchTime++
+				} else {
+					i++
+				}
+			}
+			return Empty{}, nil
 		default:
 			return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid operation: %v", operation)), fail.WithCode("Invalid arguments"))
 		}
