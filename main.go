@@ -26,8 +26,7 @@ func main() {
 		ctx := context.Background()
 
 		// Default Value
-		ctx = context.WithValue(ctx, setting.SettingKey("host"), "http://localhost")
-		ctx = context.WithValue(ctx, setting.SettingKey("port"), "9200")
+		ctx = context.WithValue(ctx, setting.SettingKey("host"), "http://localhost:9200")
 		ctx = context.WithValue(ctx, setting.SettingKey("type"), "_doc")
 		ctx = context.WithValue(ctx, setting.SettingKey("user"), "")
 		ctx = context.WithValue(ctx, setting.SettingKey("pass"), "")
@@ -64,7 +63,6 @@ func main() {
 		ctx = setting.ContextWithOptions(
 			ctx,
 			cliContext.String("host"),
-			cliContext.String("port"),
 			cliContext.String("type"),
 			cliContext.String("user"),
 			cliContext.String("pass"),
@@ -116,10 +114,6 @@ func main() {
 		cli.StringFlag{
 			Name:  "host",
 			Usage: "ES hostname",
-		},
-		cli.StringFlag{
-			Name:  "port, p",
-			Usage: "ES port",
 		},
 		cli.StringFlag{
 			Name:  "type, t",
