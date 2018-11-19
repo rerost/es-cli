@@ -19,7 +19,7 @@ https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-i
 ### Format
 ```
 $ es-cli <operation> <target> args...
-$ es-cli [--host=HOST] [--port=PORT] [--user=BASIC_AUTH_USER] [--pass=BASIC_AUTH_PASSWORD] [--type=ELASTICSEARCH_DOCUMENT_TYPE] <operation> <target> args...
+$ es-cli [--host=HOST] [--user=BASIC_AUTH_USER] [--pass=BASIC_AUTH_PASSWORD] [--type=ELASTICSEARCH_DOCUMENT_TYPE] <operation> <target> args...
 ```
 
 ### Index API
@@ -58,7 +58,7 @@ $ es-cli list task
 
 ### Experimental API
 ```
-$ es-cli copy remote remoteHost remotePort copyIndexName user pass (type or not)
+$ es-cli copy remote remoteHost copyIndexName user pass (type or not)
 ```
 
 ## Configuration
@@ -72,8 +72,7 @@ e.g
 {
   "user": "user", 
   "pass": "pass",
-  "host": "http://localhost",
-  "port": "9200",
+  "host": "http://localhost:9200",
   "type": "_doc"
 }
 ```

@@ -144,7 +144,6 @@ type BaseClient interface {
 
 type baseClientImp struct {
 	Host       string
-	Port       string
 	Type       string
 	User       null.String
 	Pass       null.String
@@ -160,18 +159,12 @@ func NewBaseClient(ctx context.Context, httpClient *http.Client) (BaseClient, er
 		return client, fail.New("Failed to extract host")
 	}
 
-	_port, ok := ctx.Value(setting.SettingKey("port")).(string)
-	if !ok {
-		return client, fail.New("Failed to extract port")
-	}
-
 	_type, ok := ctx.Value(setting.SettingKey("type")).(string)
 	if !ok {
 		return client, fail.New("Failed to extract type")
 	}
 
 	client.Host = _host
-	client.Port = _port
 	client.Type = _type
 
 	_user, ok := ctx.Value(setting.SettingKey("user")).(string)
@@ -736,10 +729,7 @@ func (client baseClientImp) Ping(ctx context.Context) (Pong, error) {
 }
 
 func (client baseClientImp) baseURL() string {
-	if client.Port == "None" {
-		return client.Host
-	}
-	return client.Host + ":" + client.Port
+	return client.Host
 }
 func (client baseClientImp) listIndexURL() string {
 	return client.baseURL() + "/_aliases"

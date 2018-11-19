@@ -403,10 +403,9 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 		switch operation {
 		case "copy":
 			host := args[0]
-			port := args[1]
-			indexName := args[2]
-			user := args[3]
-			pass := args[4]
+			indexName := args[1]
+			user := args[2]
+			pass := args[3]
 			docType := "_doc"
 			if len(args) == 6 {
 				docType = args[5]
@@ -414,7 +413,7 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 
 			// For copy context
 			cctx := context.WithValue(ctx, setting.SettingKey(""), nil)
-			cctx = setting.ContextWithOptions(cctx, host, port, docType, user, pass)
+			cctx = setting.ContextWithOptions(cctx, host, docType, user, pass)
 
 			remoteClient, err := es.NewBaseClient(cctx, e.httpClient)
 			if err != nil {

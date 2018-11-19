@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -67,11 +66,8 @@ func TestListIndex(t *testing.T) {
 			defer ts.Close()
 
 			ctx := context.Background()
-			_url, _ := url.Parse(ts.URL)
-			host := _url.Scheme + "://" + _url.Hostname()
-			port := _url.Port()
+			host := ts.URL()
 			ctx = context.WithValue(ctx, setting.SettingKey("host"), host)
-			ctx = context.WithValue(ctx, setting.SettingKey("port"), port)
 			ctx = context.WithValue(ctx, setting.SettingKey("type"), "_doc")
 			baseClient, _ := es.NewBaseClient(ctx, ts.Client())
 			indices, err := baseClient.ListIndex(ctx)
@@ -92,7 +88,6 @@ func TestListIndex(t *testing.T) {
 func helperCreateValidContext() context.Context {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, setting.SettingKey("host"), "http://localhost")
-	ctx = context.WithValue(ctx, setting.SettingKey("port"), "9200")
 	ctx = context.WithValue(ctx, setting.SettingKey("type"), "_doc")
 	return ctx
 }
