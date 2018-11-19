@@ -133,15 +133,21 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 		case "list":
 			return e.esBaseClient.ListIndex(ctx)
 		case "create":
+			var fp *os.File
 			if len(args) == CommandMap[target][operation].ArgLen {
-				return Empty{}, e.esBaseClient.CreateIndex(ctx, args[0], args[1])
-			} else if len(args) == CommandMap[target][operation].ArgLen-1 {
-				body, err := ioutil.ReadAll(os.Stdin)
+				fp, err = os.Open(args[1])
 				if err != nil {
 					return Empty{}, fail.Wrap(err)
 				}
-				return Empty{}, e.esBaseClient.CreateIndex(ctx, args[0], string(body))
+			} else if len(args) == CommandMap[target][operation].ArgLen-1 {
+				fp = os.Stdin
 			}
+			body, err := ioutil.ReadAll(fp)
+			if err != nil {
+				return Empty{}, fail.Wrap(err)
+			}
+
+			return Empty{}, e.esBaseClient.CreateIndex(ctx, args[0], string(body))
 		case "delete":
 			return Empty{}, e.esBaseClient.DeleteIndex(ctx, args[0])
 		case "copy":
