@@ -338,11 +338,7 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
-			err = e.esBaseClient.AddAlias(ctx, aliasName, newIndexName)
-			if err != nil {
-				return Empty{}, fail.Wrap(err)
-			}
-			err = e.esBaseClient.RemoveAlias(ctx, aliasName, oldIndexName)
+			err = e.esBaseClient.SwapAlias(ctx, aliasName, oldIndexName, newIndexName)
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}

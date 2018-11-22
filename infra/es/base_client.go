@@ -133,7 +133,7 @@ type BaseClient interface {
 	AddAlias(ctx context.Context, aliasName string, indexNames ...string) error
 	RemoveAlias(ctx context.Context, aliasName string, indexNames ...string) error
 	ListAlias(ctx context.Context, aliasName string) (Indices, error)
-	SwapAlias(ctx context.Context, aliasName string, removeAlias string, addAlias string) error
+	SwapAlias(ctx context.Context, aliasName string, removeIndexName string, addIndexName string) error
 
 	// Task
 	GetTask(ctx context.Context, taskID string) (Task, error)
