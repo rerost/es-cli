@@ -50,13 +50,7 @@ $ es-cli remove alias <alias_name> <index_name1> <index_name2> ...
 $ es-cli list alias <alias_name>
 ```
 
-### Task API
-```
-$ es-cli get task <task_id>
-$ es-cli list task
-```
-
-### Experimental API
+### Experimental API(thinking interface)
 ```
 $ es-cli copy remote remoteHost copyIndexName user pass (type or not)
 ```
