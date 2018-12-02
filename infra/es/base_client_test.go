@@ -10,7 +10,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/rerost/es-cli/config"
 	"github.com/rerost/es-cli/infra/es"
-	"github.com/rerost/es-cli/setting"
 )
 
 func TestNewClient(t *testing.T) {
@@ -21,10 +20,8 @@ func TestNewClient(t *testing.T) {
 		Type: "_doc",
 	}
 
-	ctx = context.WithValue(ctx, setting.SettingKey("config"), cfg)
-
 	httpClient := new(http.Client)
-	_, err := es.NewBaseClient(ctx, httpClient)
+	_, err := es.NewBaseClient(cfg, httpClient)
 	if err != nil {
 		t.Errorf("Failed to create base client: %v", err)
 	}
@@ -79,8 +76,7 @@ func TestListIndex(t *testing.T) {
 				Host: host,
 				Type: "_doc",
 			}
-			ctx = context.WithValue(ctx, setting.SettingKey("config"), cfg)
-			baseClient, _ := es.NewBaseClient(ctx, ts.Client())
+			baseClient, _ := es.NewBaseClient(cfg, ts.Client())
 			indices, err := baseClient.ListIndex(ctx)
 
 			if err != nil {

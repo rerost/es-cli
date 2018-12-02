@@ -11,9 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rerost/es-cli/config"
 	"github.com/rerost/es-cli/infra/es"
-	"github.com/rerost/es-cli/setting"
 	"github.com/srvc/fail"
 )
 
@@ -110,9 +108,6 @@ func init() {
 		},
 		"ping": {
 			"check": Command{ArgLen: 0, ArgType: EXACT},
-		},
-		"remote": {
-			"copy": Command{ArgLen: 6, ArgType: STDIN},
 		},
 	}
 }
@@ -398,113 +393,6 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 		switch operation {
 		case "check":
 			return e.esBaseClient.Ping(ctx)
-		default:
-			return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid operation: %v", operation)), fail.WithCode("Invalid arguments"))
-		}
-	}
-
-	if target == "remote" {
-		switch operation {
-		case "copy":
-			host := args[0]
-			indexName := args[1]
-			user := args[2]
-			pass := args[3]
-			docType := "_doc"
-			if len(args) == 6 {
-				docType = args[5]
-			}
-
-			// For copy context
-			cctx := context.WithValue(ctx, setting.SettingKey("config"), config.Config{
-				Host: host,
-				Type: docType,
-				User: user,
-				Pass: pass,
-			})
-
-			remoteClient, err := es.NewBaseClient(cctx, e.httpClient)
-			if err != nil {
-				return Empty{}, fail.Wrap(err)
-			}
-
-			detail, err := remoteClient.DetailIndex(cctx, indexName)
-			if err != nil {
-				return Empty{}, fail.Wrap(err)
-			}
-
-			err = e.esBaseClient.CreateIndex(cctx, indexName, detail.String())
-			if err != nil {
-				return Empty{}, fail.Wrap(err)
-			}
-
-			lastID := ""
-			for {
-				query := fmt.Sprintf(`{"query": {"match_all": {}}, "size": %d, "sort": [{"_id": "desc"}]}`, BATCH_SIZE)
-				if lastID != "" {
-					fmt.Printf("Copying search after %s\n", lastID)
-					query = fmt.Sprintf(`{"query": {"match_all": {}}, "size": %d, "sort": [{"_id": "desc"}], "search_after": ["%s"]}`, BATCH_SIZE, lastID)
-				}
-				searchResult, err := remoteClient.SearchIndex(cctx, indexName, query)
-
-				if err != nil {
-					return Empty{}, fail.Wrap(err)
-				}
-
-				bulkQuery := ""
-				for _, hit := range searchResult.Hits.Hits {
-					metaData := fmt.Sprintf(`{ "index" : { "_index": "%s", "_type": "%s", "_id": "%s" }}`, hit.Index, hit.Type, hit.ID)
-					queryBytes, err := json.Marshal(hit.Source)
-					if err != nil {
-						return Empty{}, fail.Wrap(err)
-					}
-					bulkQuery = bulkQuery + metaData + "\n" + string(queryBytes) + "\n"
-				}
-
-				err = e.esBaseClient.BulkIndex(ctx, bulkQuery)
-				if err != nil {
-					return Empty{}, fail.Wrap(err)
-				}
-
-				fmt.Printf("Done copy search after %s\n", lastID)
-
-				hitsSize := len(searchResult.Hits.Hits)
-				if hitsSize == 0 {
-					break
-				}
-				lastID = searchResult.Hits.Hits[hitsSize-1].ID
-			}
-
-			srcCnt, err := remoteClient.CountIndex(cctx, indexName)
-			if err != nil {
-				return Empty{}, fail.Wrap(err)
-			}
-			dstCnt, err := e.esBaseClient.CountIndex(ctx, indexName)
-			if err != nil {
-				return Empty{}, fail.Wrap(err)
-			}
-
-			if srcCnt.Num != dstCnt.Num {
-				e.esBaseClient.DeleteIndex(ctx, indexName)
-				return Empty{}, fail.New("Failed to copy index(Not correct count)")
-			}
-
-			// NOTE: When different version of ES, Its correct?
-			srcDetail, err := remoteClient.DetailIndex(cctx, indexName)
-			if err != nil {
-				return Empty{}, fail.Wrap(err)
-			}
-			dstDetail, err := e.esBaseClient.DetailIndex(ctx, indexName)
-			if err != nil {
-				return Empty{}, fail.Wrap(err)
-			}
-
-			if srcDetail.String() != dstDetail.String() {
-				e.esBaseClient.DeleteIndex(ctx, indexName)
-				return Empty{}, fail.New("Failed to copy index(Not correct detail)")
-			}
-
-			return Empty{}, nil
 		default:
 			return Empty{}, fail.Wrap(fail.New(fmt.Sprintf("Invalid operation: %v", operation)), fail.WithCode("Invalid arguments"))
 		}

@@ -50,11 +50,6 @@ $ es-cli remove alias <alias_name> <index_name1> <index_name2> ...
 $ es-cli list alias <alias_name>
 ```
 
-### Experimental API(thinking interface)
-```
-$ es-cli copy remote remoteHost copyIndexName user pass (type or not)
-```
-
 ## Configuration
 You can use configuration file.
 es-cli see options order by command options > current directory.
