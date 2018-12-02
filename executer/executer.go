@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rerost/es-cli/config"
 	"github.com/rerost/es-cli/infra/es"
 	"github.com/rerost/es-cli/setting"
 	"github.com/srvc/fail"
@@ -102,8 +103,7 @@ func init() {
 			"list":   Command{ArgLen: 1, ArgType: EXACT},
 		},
 		"task": {
-			"list": Command{ArgLen: 0, ArgType: EXACT},
-			"get":  Command{ArgLen: 1, ArgType: EXACT},
+			"get": Command{ArgLen: 1, ArgType: EXACT},
 		},
 		"version": {
 			"get": Command{ArgLen: 0, ArgType: EXACT},
@@ -349,11 +349,7 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
-			err = e.esBaseClient.AddAlias(ctx, aliasName, newIndexName)
-			if err != nil {
-				return Empty{}, fail.Wrap(err)
-			}
-			err = e.esBaseClient.RemoveAlias(ctx, aliasName, oldIndexName)
+			err = e.esBaseClient.SwapAlias(ctx, aliasName, oldIndexName, newIndexName)
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
@@ -382,8 +378,6 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 
 	if target == "task" {
 		switch operation {
-		case "list":
-			return e.esBaseClient.ListTask(ctx)
 		case "get":
 			return e.esBaseClient.GetTask(ctx, args[0])
 		default:
@@ -422,8 +416,12 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 			}
 
 			// For copy context
-			cctx := context.WithValue(ctx, setting.SettingKey(""), nil)
-			cctx = setting.ContextWithOptions(cctx, host, docType, user, pass)
+			cctx := context.WithValue(ctx, setting.SettingKey("config"), config.Config{
+				Host: host,
+				Type: docType,
+				User: user,
+				Pass: pass,
+			})
 
 			remoteClient, err := es.NewBaseClient(cctx, e.httpClient)
 			if err != nil {

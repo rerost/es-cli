@@ -34,11 +34,6 @@ function exec_only()
   eval "${cmd} list alias test_alias" > /dev/null
   echo "# remove alias"
   eval "${cmd} remove alias test_alias test1 test2" > /dev/null
-
-  ## Tasks
-  echo "# list task"
-  eval "${cmd} list task" > /dev/null
-  echo "# get task"
 }
 
 ports=('6200')
