@@ -3,17 +3,18 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 
+	"github.com/rerost/es-cli/config"
 	"github.com/rerost/es-cli/executer"
 	"github.com/rerost/es-cli/infra/es"
 	"github.com/rerost/es-cli/setting"
 	"github.com/srvc/fail"
 	"github.com/urfave/cli"
+	"gopkg.in/guregu/null.v3"
 )
 
 func main() {
@@ -25,52 +26,39 @@ func main() {
 	app.Action = func(cliContext *cli.Context) error {
 		ctx := context.Background()
 
-		// Default Value
-		ctx = context.WithValue(ctx, setting.SettingKey("host"), "http://localhost:9200")
-		ctx = context.WithValue(ctx, setting.SettingKey("type"), "_doc")
-		ctx = context.WithValue(ctx, setting.SettingKey("user"), "")
-		ctx = context.WithValue(ctx, setting.SettingKey("pass"), "")
-
+		cfg := config.DefaultConfig()
 		// Home config file
 		if homeDir := os.Getenv("HOME"); homeDir != "" {
 			if f, err := ioutil.ReadFile(homeDir + "/.escli.json"); err == nil {
-				configMap := map[string]string{}
-				err = json.Unmarshal(f, &configMap)
+				homeCfg, err := config.LoadConfig(f)
 				if err != nil {
 					return fail.Wrap(err)
 				}
-
-				for k, v := range configMap {
-					ctx = context.WithValue(ctx, setting.SettingKey(k), v)
-				}
+				cfg = config.Overwrite(cfg, homeCfg)
 			}
 		}
 
-		// Config file
+		// Local Config file
 		if f, err := ioutil.ReadFile(".escli.json"); err == nil {
-			configMap := map[string]string{}
-			err = json.Unmarshal(f, &configMap)
+			localCfg, err := config.LoadConfig(f)
 			if err != nil {
 				return fail.Wrap(err)
 			}
-
-			for k, v := range configMap {
-				ctx = context.WithValue(ctx, setting.SettingKey(k), v)
-			}
+			cfg = config.Overwrite(cfg, localCfg)
 		}
 
-		// Params
-		ctx = setting.ContextWithOptions(
-			ctx,
-			cliContext.String("host"),
-			cliContext.String("type"),
-			cliContext.String("user"),
-			cliContext.String("pass"),
-		)
+		// Params Config
+		paramsCfg := config.Config{
+			Host:     cliContext.String("host"),
+			Type:     cliContext.String("type"),
+			User:     cliContext.String("user"),
+			Pass:     cliContext.String("pass"),
+			Insecure: null.BoolFrom(cliContext.Bool("insecure")),
+		}
+		cfg = config.Overwrite(cfg, paramsCfg)
 
-		ctx = context.WithValue(ctx, setting.SettingKey("insecure"), cliContext.Bool("insecure"))
 		var httpClient *http.Client
-		if cliContext.Bool("insecure") {
+		if cfg.Insecure.Valid && cfg.Insecure.Bool {
 			tr := &http.Transport{
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			}
@@ -78,6 +66,8 @@ func main() {
 		} else {
 			httpClient = new(http.Client)
 		}
+
+		ctx = context.WithValue(ctx, setting.SettingKey("config"), cfg)
 
 		esBaseClient, err := es.NewBaseClient(ctx, httpClient)
 		if err != nil {

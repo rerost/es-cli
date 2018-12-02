@@ -405,8 +405,12 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 			}
 
 			// For copy context
-			cctx := context.WithValue(ctx, setting.SettingKey(""), nil)
-			cctx = setting.ContextWithOptions(cctx, host, docType, user, pass)
+			cctx = context.WithValue(ctx, setting.SettingKey("config"), config.Config{
+				Host: host,
+				Type: docType,
+				User: user,
+				Pass: pass,
+			})
 
 			remoteClient, err := es.NewBaseClient(cctx, e.httpClient)
 			if err != nil {
