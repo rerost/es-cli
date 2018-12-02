@@ -41,7 +41,9 @@ const (
 )
 
 const (
-	BATCH_SIZE = 1000
+	BATCH_SIZE  = 1000
+	initBufSize = 65536
+	maxBufSize  = 65536000
 )
 
 func (c Command) Validate(args Args) error {
@@ -262,7 +264,12 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 			defer fp.Close()
 
 			scanner := bufio.NewScanner(fp)
+
 			scanner.Split(bufio.ScanLines)
+			{
+				buf := make([]byte, initBufSize)
+				scanner.Buffer(buf, maxBufSize)
+			}
 
 			// twice, because metadata + document pair
 			buf := make([]string, BATCH_SIZE*2, BATCH_SIZE*2)
@@ -284,6 +291,9 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 				} else {
 					i++
 				}
+			}
+			if err := scanner.Err(); err != nil {
+				return Empty{}, fail.Wrap(err)
 			}
 			return Empty{}, nil
 		default:
