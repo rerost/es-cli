@@ -41,7 +41,10 @@ func LoadConfigWithNamespace(jsonBody []byte, namespace string) (Config, error) 
 	cfg := Config{}
 
 	cfgJSON := map[string]interface{}{}
-	json.Unmarshal(jsonBody, &cfgJSON)
+	err := json.Unmarshal(jsonBody, &cfgJSON)
+	if err != nil {
+		return cfg, fail.Wrap(err)
+	}
 	if _, ok := cfgJSON[namespace]; !ok {
 		return cfg, fail.New(fmt.Sprintf("Not found namespace: %v", namespace))
 	}
