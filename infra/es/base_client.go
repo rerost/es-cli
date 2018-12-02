@@ -444,13 +444,17 @@ func (client baseClientImp) SwapAlias(ctx context.Context, aliasName string, rem
 	swapAliasJSON := fmt.Sprintf(`
 {
 	"actions": [
-		"remove": {
-			"index": "%s",
-			"alias": "%s"
+		{
+			"remove": {
+				"index": "%s",
+				"alias": "%s"
+			}
 		},
-		"add": {
-			"index": "%s",
-			"alias": "%s"
+		{
+			"add": {
+				"index": "%s",
+				"alias": "%s"
+			}
 		}
 	]
 }`, removeIndexName, aliasName, addIndexName, aliasName)
