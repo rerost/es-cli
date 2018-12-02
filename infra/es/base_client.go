@@ -341,7 +341,7 @@ func (client baseClientImp) BulkIndex(ctx context.Context, body string) error {
 }
 
 func (client baseClientImp) DetailIndex(ctx context.Context, indexName string) (IndexDetail, error) {
-	responseBody, err := client.httpRequest(ctx, http.MethodPost, client.detailURL(indexName), "", "", nil)
+	responseBody, err := client.httpRequest(ctx, http.MethodGet, client.detailURL(indexName), "", "", nil)
 	indexDetail := IndexDetail{}
 	if err != nil {
 		return indexDetail, fail.Wrap(err)
