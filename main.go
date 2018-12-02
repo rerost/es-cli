@@ -11,7 +11,6 @@ import (
 	"github.com/rerost/es-cli/config"
 	"github.com/rerost/es-cli/executer"
 	"github.com/rerost/es-cli/infra/es"
-	"github.com/rerost/es-cli/setting"
 	"github.com/srvc/fail"
 	"github.com/urfave/cli"
 	"gopkg.in/guregu/null.v3"
@@ -68,9 +67,7 @@ func main() {
 			httpClient = new(http.Client)
 		}
 
-		ctx = context.WithValue(ctx, setting.SettingKey("config"), cfg)
-
-		esBaseClient, err := es.NewBaseClient(ctx, httpClient)
+		esBaseClient, err := es.NewBaseClient(cfg, httpClient)
 		if err != nil {
 			return err
 		}

@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/rerost/es-cli/config"
-	"github.com/rerost/es-cli/setting"
 	"github.com/srvc/fail"
 )
 
@@ -147,14 +146,9 @@ type baseClientImp struct {
 	HttpClient *http.Client
 }
 
-func NewBaseClient(ctx context.Context, httpClient *http.Client) (BaseClient, error) {
+func NewBaseClient(cfg config.Config, httpClient *http.Client) (BaseClient, error) {
 	client := baseClientImp{}
 	client.HttpClient = httpClient
-
-	cfg, ok := ctx.Value(setting.SettingKey("config")).(config.Config)
-	if !ok {
-		return client, fail.New("Failed to extract config")
-	}
 	client.Config = cfg
 
 	return client, nil
