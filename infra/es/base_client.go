@@ -259,7 +259,7 @@ func (client baseClientImp) CopyIndex(ctx context.Context, srcIndexName string, 
 	}
 }
 	`, srcIndexName, dstIndexName)
-	responseBody, err := client.httpRequest(ctx, http.MethodPut, client.reindexURL(), reindexJSON, "application/json", map[string]string{"wait_for_completion": "false"})
+	responseBody, err := client.httpRequest(ctx, http.MethodPost, client.reindexURL(), reindexJSON, "application/json", map[string]string{"wait_for_completion": "false"})
 	if err != nil {
 		return Task{}, fail.Wrap(err)
 	}
