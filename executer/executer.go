@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rerost/es-cli/config"
 	"github.com/rerost/es-cli/infra/es"
 	"github.com/rerost/es-cli/setting"
 	"github.com/srvc/fail"
@@ -405,7 +406,7 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 			}
 
 			// For copy context
-			cctx = context.WithValue(ctx, setting.SettingKey("config"), config.Config{
+			cctx := context.WithValue(ctx, setting.SettingKey("config"), config.Config{
 				Host: host,
 				Type: docType,
 				User: user,
