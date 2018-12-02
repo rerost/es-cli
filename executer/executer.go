@@ -100,8 +100,7 @@ func init() {
 			"list":   Command{ArgLen: 1, ArgType: EXACT},
 		},
 		"task": {
-			"list": Command{ArgLen: 0, ArgType: EXACT},
-			"get":  Command{ArgLen: 1, ArgType: EXACT},
+			"get": Command{ArgLen: 1, ArgType: EXACT},
 		},
 		"version": {
 			"get": Command{ArgLen: 0, ArgType: EXACT},
@@ -339,11 +338,7 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
-			err = e.esBaseClient.AddAlias(ctx, aliasName, newIndexName)
-			if err != nil {
-				return Empty{}, fail.Wrap(err)
-			}
-			err = e.esBaseClient.RemoveAlias(ctx, aliasName, oldIndexName)
+			err = e.esBaseClient.SwapAlias(ctx, aliasName, oldIndexName, newIndexName)
 			if err != nil {
 				return Empty{}, fail.Wrap(err)
 			}
@@ -372,8 +367,6 @@ func (e *executerImp) Run(ctx context.Context, operation string, target string, 
 
 	if target == "task" {
 		switch operation {
-		case "list":
-			return e.esBaseClient.ListTask(ctx)
 		case "get":
 			return e.esBaseClient.GetTask(ctx, args[0])
 		default:

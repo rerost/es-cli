@@ -66,7 +66,7 @@ func TestListIndex(t *testing.T) {
 			defer ts.Close()
 
 			ctx := context.Background()
-			host := ts.URL()
+			host := ts.URL
 			ctx = context.WithValue(ctx, setting.SettingKey("host"), host)
 			ctx = context.WithValue(ctx, setting.SettingKey("type"), "_doc")
 			baseClient, _ := es.NewBaseClient(ctx, ts.Client())
