@@ -27,24 +27,25 @@ func main() {
 		ctx := context.Background()
 
 		cfg := config.DefaultConfig()
-		// Home config file
-		if homeDir := os.Getenv("HOME"); homeDir != "" {
-			if f, err := ioutil.ReadFile(homeDir + "/.escli.json"); err == nil {
-				homeCfg, err := config.LoadConfig(f)
-				if err != nil {
-					return fail.Wrap(err)
-				}
-				cfg = config.Overwrite(cfg, homeCfg)
-			}
-		}
+
+		// Check namespace
+		namespace := cliContext.String("namespace")
 
 		// Local Config file
 		if f, err := ioutil.ReadFile(".escli.json"); err == nil {
-			localCfg, err := config.LoadConfig(f)
-			if err != nil {
-				return fail.Wrap(err)
+			if namespace == "" {
+				localCfg, err := config.LoadConfig(f)
+				if err != nil {
+					return fail.Wrap(err)
+				}
+				cfg = config.Overwrite(cfg, localCfg)
+			} else {
+				localCfg, err := config.LoadConfigWithNamespace(f, namespace)
+				if err != nil {
+					return fail.Wrap(err)
+				}
+				cfg = config.Overwrite(cfg, localCfg)
 			}
-			cfg = config.Overwrite(cfg, localCfg)
 		}
 
 		// Params Config
@@ -120,6 +121,10 @@ func main() {
 		cli.BoolFlag{
 			Name:  "insecure, k",
 			Usage: "Same as curl insecure",
+		},
+		cli.StringFlag{
+			Name:  "namespace, n",
+			Usage: "Specify namespace in es-cli",
 		},
 	}
 
