@@ -8,13 +8,21 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/rerost/es-cli/config"
 	"github.com/rerost/es-cli/infra/es"
 	"github.com/rerost/es-cli/setting"
 )
 
 func TestNewClient(t *testing.T) {
 	t.Parallel()
-	ctx := helperCreateValidContext()
+	ctx := context.Background()
+	cfg := config.Config{
+		Host: "http://localhost:9200",
+		Type: "_doc",
+	}
+
+	ctx = context.WithValue(ctx, setting.SettingKey("config"), cfg)
+
 	httpClient := new(http.Client)
 	_, err := es.NewBaseClient(ctx, httpClient)
 	if err != nil {
@@ -67,8 +75,11 @@ func TestListIndex(t *testing.T) {
 
 			ctx := context.Background()
 			host := ts.URL
-			ctx = context.WithValue(ctx, setting.SettingKey("host"), host)
-			ctx = context.WithValue(ctx, setting.SettingKey("type"), "_doc")
+			cfg := config.Config{
+				Host: host,
+				Type: "_doc",
+			}
+			ctx = context.WithValue(ctx, setting.SettingKey("config"), cfg)
 			baseClient, _ := es.NewBaseClient(ctx, ts.Client())
 			indices, err := baseClient.ListIndex(ctx)
 
@@ -83,11 +94,4 @@ func TestListIndex(t *testing.T) {
 			}
 		})
 	}
-}
-
-func helperCreateValidContext() context.Context {
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, setting.SettingKey("host"), "http://localhost")
-	ctx = context.WithValue(ctx, setting.SettingKey("type"), "_doc")
-	return ctx
 }

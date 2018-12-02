@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/rerost/es-cli/config"
 	"github.com/rerost/es-cli/setting"
 	"github.com/srvc/fail"
-	"gopkg.in/guregu/null.v3"
 )
 
 type Index struct {
@@ -143,10 +143,7 @@ type BaseClient interface {
 }
 
 type baseClientImp struct {
-	Host       string
-	Type       string
-	User       null.String
-	Pass       null.String
+	Config     config.Config
 	HttpClient *http.Client
 }
 
@@ -154,18 +151,11 @@ func NewBaseClient(ctx context.Context, httpClient *http.Client) (BaseClient, er
 	client := baseClientImp{}
 	client.HttpClient = httpClient
 
-	_host, ok := ctx.Value(setting.SettingKey("host")).(string)
+	cfg, ok := ctx.Value(setting.SettingKey("config")).(config.Config)
 	if !ok {
-		return client, fail.New("Failed to extract host")
+		return client, fail.New("Failed to extract config")
 	}
-
-	_type, ok := ctx.Value(setting.SettingKey("type")).(string)
-	if !ok {
-		return client, fail.New("Failed to extract type")
-	}
-
-	client.Host = _host
-	client.Type = _type
+	client.Config = cfg
 
 	return client, nil
 }
@@ -184,8 +174,8 @@ func (client baseClientImp) httpRequest(ctx context.Context, method string, url 
 		request = addParams(request, params)
 	}
 
-	if client.User.Valid && client.Pass.Valid && client.User.String != "" && client.Pass.String != "" {
-		request.SetBasicAuth(client.User.String, client.Pass.String)
+	if client.Config.User != "" && client.Config.Pass != "" {
+		request.SetBasicAuth(client.Config.User, client.Config.Pass)
 	}
 
 	response, err := client.HttpClient.Do(request)
@@ -553,8 +543,8 @@ func (client baseClientImp) Ping(ctx context.Context) (Pong, error) {
 		return Pong{OK: false}, fail.Wrap(err)
 	}
 
-	if client.User.Valid && client.Pass.Valid && client.User.String != "" && client.Pass.String != "" {
-		request.SetBasicAuth(client.User.String, client.Pass.String)
+	if client.Config.User != "" && client.Config.Pass != "" {
+		request.SetBasicAuth(client.Config.User, client.Config.Pass)
 	}
 
 	response, err := client.HttpClient.Do(request)
@@ -572,13 +562,13 @@ func (client baseClientImp) Ping(ctx context.Context) (Pong, error) {
 }
 
 func (client baseClientImp) baseURL() string {
-	return client.Host
+	return client.Config.Host
 }
 func (client baseClientImp) listIndexURL() string {
 	return client.baseURL() + "/_aliases"
 }
 func (client baseClientImp) indexURL(indexName string) string {
-	return client.baseURL() + "/" + indexName + "/" + client.Type
+	return client.baseURL() + "/" + indexName + "/" + client.Config.Type
 }
 func (client baseClientImp) rawIndexURL(indexName string) string {
 	return client.baseURL() + "/" + indexName
@@ -593,7 +583,7 @@ func (client baseClientImp) taskURL(taskID string) string {
 	return client.tasksURL() + "/" + taskID
 }
 func (client baseClientImp) mappingURL(indexOrAliasName string) string {
-	return client.baseURL() + "/" + indexOrAliasName + "/" + "_mapping" + "/" + client.Type
+	return client.baseURL() + "/" + indexOrAliasName + "/" + "_mapping" + "/" + client.Config.Type
 }
 func (client baseClientImp) aliasURL() string {
 	return client.baseURL() + "/_aliases"
