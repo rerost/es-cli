@@ -57,7 +57,7 @@ $ es-cli copy remote remoteHost copyIndexName user pass (type or not)
 
 ## Configuration
 You can use configuration file.
-es-cli see options order by command options > current directory > home direcotry.
+es-cli see options order by command options > current directory.
 
 configrutaion file name is "`escli.json`
 the configuration file's format is json.
@@ -70,3 +70,17 @@ e.g
   "type": "_doc"
 }
 ```
+
+when use multiple elasticsearch, use namespace
+e.g.
+```
+{
+  "production": {
+    "host": "http://prod-es"
+  },
+  "qa": {
+    "host": "http://qa-es"
+  }
+}
+```
+and exec `es-cli -n production list index`
