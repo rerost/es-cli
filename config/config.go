@@ -13,7 +13,7 @@ type Config struct {
 	Type     string    `json:"type"`
 	User     string    `json:"user"`
 	Pass     string    `json:"pass"`
-	Insecure null.Bool `json:"insecure` // Use null.Bool for overwrite.
+	Insecure null.Bool `json:"insecure"` // Use null.Bool for overwrite.
 }
 
 func DefaultConfig() Config {
