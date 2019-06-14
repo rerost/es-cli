@@ -40,10 +40,14 @@ workflows:
   version: 2
   build_and_test:
     jobs:
-      - build
+      - build:
+          environment:
+            GO111MODULE: auto
       - test:
           requires:
             - build
+          environment:
+            GO111MODULE: auto
       - release:
           requires:
             - build
