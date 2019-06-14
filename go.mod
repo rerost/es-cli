@@ -10,7 +10,7 @@ require (
 	github.com/izumin5210/gex v0.4.5 // indirect
 	github.com/mattn/go-colorable v0.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.4 // indirect
-	github.com/mitchellh/colorstring v0.0.0-20150917214807-8631ce90f286 // indirect
+	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/srvc/fail v3.1.0+incompatible
 	github.com/stretchr/testify v1.3.0 // indirect
