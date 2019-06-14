@@ -5,14 +5,16 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.11
+      - image: circleci/golang:1.12
     working_directory: /go/src/github.com/rerost/es-cli
     steps:
       - checkout
       - run: make build
+    environment:
+      GO111MODULE: "on"
   test:
     docker:
-      - image: circleci/golang:1.11
+      - image: circleci/golang:1.12
       - image: docker.elastic.co/elasticsearch/elasticsearch:6.2.0
         environment:
           http.host: '0.0.0.0'
@@ -22,9 +24,11 @@ jobs:
       - checkout
       - setup_remote_docker
       - run: make test
+    environment:
+      GO111MODULE: "on"
   release:
     docker:
-      - image: circleci/golang:1.11
+      - image: circleci/golang:1.12
     working_directory: /go/src/github.com/rerost/es-cli
     steps:
       - checkout

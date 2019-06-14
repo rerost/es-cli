@@ -6,10 +6,7 @@ all: es-cli
 PHONY: vendor
 vendor:
 	go get github.com/izumin5210/gex/cmd/gex
-	# Gex depends on dep
-	go get github.com/golang/dep/cmd/dep
-
-	dep ensure -v -vendor-only
+	go mod download
 
 PHONY: go-test
 go-test: vendor
