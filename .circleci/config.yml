@@ -11,7 +11,7 @@ jobs:
       - checkout
       - run: make build
     environment:
-      GO111MODULE: on
+      GO111MODULE: "on"
   test:
     docker:
       - image: circleci/golang:1.12
@@ -25,7 +25,7 @@ jobs:
       - setup_remote_docker
       - run: make test
     environment:
-      GO111MODULE: on
+      GO111MODULE: "on"
   release:
     docker:
       - image: circleci/golang:1.12
