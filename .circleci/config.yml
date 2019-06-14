@@ -5,14 +5,14 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.11
+      - image: circleci/golang:1.12
     working_directory: /go/src/github.com/rerost/es-cli
     steps:
       - checkout
       - run: make build
   test:
     docker:
-      - image: circleci/golang:1.11
+      - image: circleci/golang:1.12
       - image: docker.elastic.co/elasticsearch/elasticsearch:6.2.0
         environment:
           http.host: '0.0.0.0'
@@ -24,7 +24,7 @@ jobs:
       - run: make test
   release:
     docker:
-      - image: circleci/golang:1.11
+      - image: circleci/golang:1.12
     working_directory: /go/src/github.com/rerost/es-cli
     steps:
       - checkout
