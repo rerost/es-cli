@@ -1,9 +1,7 @@
-package list
+package copy
 
 import (
 	"context"
-	"fmt"
-	"os"
 
 	"github.com/rerost/es-cli/domain"
 	"github.com/spf13/cobra"
@@ -14,13 +12,12 @@ func NewIndexCmd(ctx context.Context, ind domain.Index) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "index",
 		Short: "list up index",
-		Args:  cobra.ExactArgs(0),
+		Args:  cobra.ExactArgs(2),
 		RunE: func(_ *cobra.Command, args []string) error {
-			indices, err := ind.List(ctx)
+			err := ind.Copy(ctx, args[0], args[1])
 			if err != nil {
 				return fail.Wrap(err)
 			}
-			fmt.Fprintln(os.Stdout, indices.String())
 			return nil
 		},
 	}

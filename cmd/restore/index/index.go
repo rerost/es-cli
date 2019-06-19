@@ -1,8 +1,8 @@
-package list
+package restore
 
 import (
 	"context"
-	"fmt"
+	"io"
 	"os"
 
 	"github.com/rerost/es-cli/domain"
@@ -13,14 +13,26 @@ import (
 func NewIndexCmd(ctx context.Context, ind domain.Index) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "index",
-		Short: "list up index",
-		Args:  cobra.ExactArgs(0),
+		Short: "restore index",
+		Args:  cobra.RangeArgs(0, 1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			indices, err := ind.List(ctx)
+			var fp io.Reader
+			switch len(args) {
+			case 1:
+				fp = os.Stdin
+			case 2:
+				// Read file from filename
+				fileName := args[0]
+				var err error
+				fp, err = os.Open(fileName)
+				if err != nil {
+					return fail.Wrap(err)
+				}
+			}
+			err := ind.Restore(ctx, fp)
 			if err != nil {
 				return fail.Wrap(err)
 			}
-			fmt.Fprintln(os.Stdout, indices.String())
 			return nil
 		},
 	}

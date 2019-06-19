@@ -1,4 +1,4 @@
-package list
+package count
 
 import (
 	"context"
@@ -13,14 +13,14 @@ import (
 func NewIndexCmd(ctx context.Context, ind domain.Index) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "index",
-		Short: "list up index",
-		Args:  cobra.ExactArgs(0),
+		Short: "count index",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
-			indices, err := ind.List(ctx)
+			cnt, err := ind.Count(ctx, args[0])
 			if err != nil {
 				return fail.Wrap(err)
 			}
-			fmt.Fprintln(os.Stdout, indices.String())
+			fmt.Fprintln(os.Stdout, cnt)
 			return nil
 		},
 	}
