@@ -1,11 +1,14 @@
 package domain
 
 import (
+	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/rerost/es-cli/infra/es"
@@ -13,11 +16,20 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	BATCH_SIZE  = 1000
+	initBufSize = 65536
+	maxBufSize  = 65536000
+)
+
 type Index interface {
 	List(ctx context.Context) (es.Indices, error)
 	Create(ctx context.Context, indexName string, mapping io.Reader) error
 	Delete(ctx context.Context, indexName string) error
 	Copy(ctx context.Context, srcIndex, destIndex string) error
+	Count(ctx context.Context, indexName string) (int64, error)
+	Dump(ctx context.Context, indexName string, fp io.Writer) error
+	Restore(ctx context.Context, fp io.Reader) error
 }
 
 func NewIndex(esBaseClient es.BaseClient) Index {
@@ -57,13 +69,13 @@ func (i indexImpl) Copy(ctx context.Context, srcIndex, destIndex string) error {
 	}
 
 	fmt.Fprintf(os.Stdout, "TaskID is %s\n", task.ID)
-	zap.L().Info("Start task", zap.String("task_id: ", task.ID))
+	zap.L().Debug("Start task", zap.String("task_id: ", task.ID))
 
 	for try := 1; ; try++ {
 		// Back off
 		wait := time.Second * time.Duration(try*try)
 		time.Sleep(wait)
-		zap.L().Info("Waiting for complete copy", zap.Duration("waited(s)", wait))
+		zap.L().Debug("Waiting for complete copy", zap.Duration("waited(s)", wait))
 		task, err := i.esBaseClient.GetTask(ctx, task.ID)
 
 		if err != nil {
@@ -90,5 +102,103 @@ func (i indexImpl) Copy(ctx context.Context, srcIndex, destIndex string) error {
 	}
 	zap.L().Info("Done")
 
+	return nil
+}
+
+func (i indexImpl) Count(ctx context.Context, indexName string) (int64, error) {
+	c, err := i.esBaseClient.CountIndex(ctx, indexName)
+	if err != nil {
+		return 0, fail.Wrap(err)
+	}
+
+	return c.Num, nil
+}
+
+func (i indexImpl) Dump(ctx context.Context, indexName string, detailFile io.Writer) error {
+	detail, err := i.esBaseClient.DetailIndex(ctx, indexName)
+	if err != nil {
+		return fail.Wrap(err)
+	}
+
+	_, err = detailFile.Write([]byte(detail.String()))
+	if err != nil {
+		return fail.Wrap(err)
+	}
+
+	dumpFile, err := os.Create(fmt.Sprintf("./%s_dump.ndjson", indexName))
+	if err != nil {
+		return fail.Wrap(err)
+	}
+	defer dumpFile.Close()
+
+	lastID := ""
+	for {
+		query := fmt.Sprintf(`{"query": {"match_all": {}}, "size": %d, "sort": [{"_id": "desc"}]}`, BATCH_SIZE)
+		if lastID != "" {
+			zap.L().Info("Copying search after", zap.String("ID", lastID))
+			query = fmt.Sprintf(`{"query": {"match_all": {}}, "size": %d, "sort": [{"_id": "desc"}], "search_after": ["%s"]}`, BATCH_SIZE, lastID)
+		}
+		searchResult, err := i.esBaseClient.SearchIndex(ctx, indexName, query)
+
+		if err != nil {
+			return fail.Wrap(err)
+		}
+
+		for _, hit := range searchResult.Hits.Hits {
+			metaData := fmt.Sprintf(`{ "index" : { "_index": "%s", "_type": "%s", "_id": "%s" }}`, hit.Index, hit.Type, hit.ID)
+			queryBytes, err := json.Marshal(hit.Source)
+			if err != nil {
+				return fail.Wrap(err)
+			}
+			_, err = dumpFile.Write([]byte(metaData + "\n" + string(queryBytes) + "\n"))
+			if err != nil {
+				return fail.Wrap(err)
+			}
+		}
+
+		hitsSize := len(searchResult.Hits.Hits)
+		if hitsSize == 0 {
+			break
+		}
+
+		lastID = searchResult.Hits.Hits[hitsSize-1].ID
+	}
+
+	return nil
+}
+
+func (i indexImpl) Restore(ctx context.Context, fp io.Reader) error {
+	scanner := bufio.NewScanner(fp)
+
+	scanner.Split(bufio.ScanLines)
+	{
+		buf := make([]byte, initBufSize)
+		scanner.Buffer(buf, maxBufSize)
+	}
+
+	// twice, because metadata + document pair
+	buf := make([]string, BATCH_SIZE*2, BATCH_SIZE*2)
+	iter := 0
+	batchTime := 1
+	for scanner.Scan() {
+		buf[iter] = scanner.Text()
+
+		if iter == len(buf)-1 {
+			zap.L().Debug("Copied", zap.Int("size", len(buf)/2*batchTime))
+			err := i.esBaseClient.BulkIndex(ctx, strings.Join(buf, "\n")+"\n")
+			if err != nil {
+				return fail.Wrap(err)
+			}
+
+			buf = make([]string, len(buf), len(buf))
+			iter = 0
+			batchTime++
+		} else {
+			iter++
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return fail.Wrap(err)
+	}
 	return nil
 }
