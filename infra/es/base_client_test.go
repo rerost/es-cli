@@ -14,7 +14,6 @@ import (
 
 func TestNewClient(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
 	cfg := config.Config{
 		Host: "http://localhost:9200",
 		Type: "_doc",
