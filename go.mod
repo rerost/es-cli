@@ -15,6 +15,8 @@ require (
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/spf13/cobra v0.0.5
+	github.com/spf13/pflag v1.0.3
+	github.com/spf13/viper v1.3.2
 	github.com/srvc/fail v3.1.0+incompatible
 	github.com/stretchr/testify v1.3.0 // indirect
 	github.com/tcnksm/ghr v0.0.0-20181005104214-1dabd986f323

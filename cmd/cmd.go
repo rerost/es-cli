@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"context"
-	"fmt"
-	"os"
 
 	"github.com/rerost/es-cli/config"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"github.com/srvc/fail"
 	"go.uber.org/zap"
 )
@@ -13,17 +13,43 @@ import (
 func Run() error {
 	ctx := context.TODO()
 
-	cmd, err := InitializeCmd(ctx, config.Config{})
+	cfg, err := NewConfig()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create cmd: %v\n", err)
+		return fail.Wrap(err)
 	}
 
-	l, err := InitializeLogger(config.Config{})
+	l, err := InitializeLogger(cfg)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create logger: %v\n", err)
+		return fail.Wrap(err)
 	}
 	defer l.Sync()
 
 	zap.ReplaceGlobals(l)
+	cmd, err := InitializeCmd(ctx, cfg)
+	if err != nil {
+		return fail.Wrap(err)
+	}
+
 	return fail.Wrap(cmd.Execute())
+}
+
+func NewConfig() (config.Config, error) {
+	v := viper.New()
+
+	pflag.StringP("host", "", "localhost", "ES hostname")
+	pflag.StringP("type", "t", "_doc", "ES type")
+	pflag.StringP("user", "u", "localhost", "ES basic auth user")
+	pflag.StringP("pass", "p", "localhost", "ES basic auth password")
+	pflag.BoolP("insecure", "k", false, "Same as curl insecure")
+	pflag.StringP("namespace", "n", "localhost", "Specify config in es-cli")
+
+	pflag.BoolP("verbose", "v", false, "")
+	pflag.BoolP("debug", "d", false, "")
+
+	pflag.Parse()
+	viper.BindPFlags(pflag.CommandLine)
+
+	var cfg config.Config
+	err := v.Unmarshal(&cfg)
+	return cfg, err
 }
