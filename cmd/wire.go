@@ -16,7 +16,7 @@ import (
 )
 
 func InitializeCmd(ctx context.Context, cfg config.Config) (*cobra.Command, error) {
-	wire.Build(NewCmdRoot, es.NewBaseClient, http.NewClient, domain.NewIndex)
+	wire.Build(NewCmdRoot, es.NewBaseClient, http.NewClient, domain.NewIndex, domain.NewDetail)
 	return &cobra.Command{}, nil
 }
 
