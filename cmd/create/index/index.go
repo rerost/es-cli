@@ -14,7 +14,7 @@ func NewIndexCmd(ctx context.Context, ind domain.Index) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "index",
 		Short: "create index",
-		Args:  cobra.RangeArgs(0, 1),
+		Args:  cobra.RangeArgs(1, 2),
 		RunE: func(_ *cobra.Command, args []string) error {
 			var fp io.Reader
 			switch len(args) {
