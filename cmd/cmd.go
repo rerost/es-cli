@@ -31,9 +31,11 @@ func Run() error {
 		return fail.Wrap(err)
 	}
 
-	err = cmd.Execute()
-	zap.L().Debug("error", zap.String("stack trace", fmt.Sprintf("%#v\n", err)))
-	return fail.Wrap(err)
+	if err := cmd.Execute(); err != nil {
+		zap.L().Debug("error", zap.String("stack trace", fmt.Sprintf("%#v\n", err)))
+		return fail.Wrap(err)
+	}
+	return nil
 }
 
 func NewConfig() (config.Config, error) {
