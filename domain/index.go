@@ -62,6 +62,30 @@ func (i indexImpl) Delete(ctx context.Context, indexName string) error {
 }
 
 func (i indexImpl) Copy(ctx context.Context, srcIndex, destIndex string) error {
+	{
+		indices, err := i.esBaseClient.ListIndex(ctx)
+		if err != nil {
+			return fail.Wrap(err)
+		}
+		var srcExists bool
+		var destExists bool
+
+		for _, index := range indices {
+			if index.String() == srcIndex {
+				srcExists = true
+			}
+			if index.String() == destIndex {
+				destExists = true
+			}
+		}
+
+		if srcExists {
+			return fail.Wrap(fail.New("Source index is not found"), fail.WithParam("index", srcIndex))
+		}
+		if destExists {
+			return fail.Wrap(fail.New("Destination index is not found"), fail.WithParam("index", destIndex))
+		}
+	}
 	task, err := i.esBaseClient.CopyIndex(ctx, srcIndex, destIndex)
 
 	if err != nil {
