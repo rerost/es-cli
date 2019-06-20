@@ -9,7 +9,7 @@ import (
 
 func NewClient(cfg config.Config) *nhttp.Client {
 	var httpClient *nhttp.Client
-	if cfg.Insecure.Valid && cfg.Insecure.Bool {
+	if cfg.Insecure {
 		tr := &nhttp.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/rerost/es-cli/config"
 	"github.com/spf13/pflag"
@@ -30,26 +31,26 @@ func Run() error {
 		return fail.Wrap(err)
 	}
 
-	return fail.Wrap(cmd.Execute())
+	err = cmd.Execute()
+	zap.L().Debug("error", zap.String("stack trace", fmt.Sprintf("%#v\n", err)))
+	return fail.Wrap(err)
 }
 
 func NewConfig() (config.Config, error) {
-	v := viper.New()
-
-	pflag.StringP("host", "", "localhost", "ES hostname")
+	pflag.StringP("host", "", "http://localhost:9200", "ES hostname")
 	pflag.StringP("type", "t", "_doc", "ES type")
-	pflag.StringP("user", "u", "localhost", "ES basic auth user")
-	pflag.StringP("pass", "p", "localhost", "ES basic auth password")
+	pflag.StringP("user", "u", "", "ES basic auth user")
+	pflag.StringP("pass", "p", "", "ES basic auth password")
 	pflag.BoolP("insecure", "k", false, "Same as curl insecure")
-	pflag.StringP("namespace", "n", "localhost", "Specify config in es-cli")
+	pflag.StringP("namespace", "n", "localhost", "Specify config in es-cli") // For conf. Think alter position
 
 	pflag.BoolP("verbose", "v", false, "")
 	pflag.BoolP("debug", "d", false, "")
 
-	pflag.Parse()
 	viper.BindPFlags(pflag.CommandLine)
 
 	var cfg config.Config
-	err := v.Unmarshal(&cfg)
-	return cfg, err
+	pflag.Parse()
+	err := viper.Unmarshal(&cfg)
+	return cfg, fail.Wrap(err)
 }
