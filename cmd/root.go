@@ -16,14 +16,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewCmdRoot(ctx context.Context, ind domain.Index, dtl domain.Detail) *cobra.Command {
+func NewCmdRoot(
+	ctx context.Context,
+	ind domain.Index,
+	dtl domain.Detail,
+	alis domain.Alias,
+) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "es-cli",
 		Short: "Elasticsearch control tool",
 	}
 
 	cmd.AddCommand(
-		list.NewListCommand(ctx, ind),
+		list.NewListCommand(ctx, ind, alis),
 		copy.NewCopyCommand(ctx, ind),
 		count.NewCountCommand(ctx, ind),
 		create.NewCreateCommand(ctx, ind),

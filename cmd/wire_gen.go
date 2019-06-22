@@ -26,7 +26,8 @@ func InitializeCmd(ctx context.Context, cfg config.Config) (*cobra.Command, erro
 	}
 	index := domain.NewIndex(baseClient)
 	detail := domain.NewDetail(baseClient, index)
-	command := NewCmdRoot(ctx, index, detail)
+	alias := domain.NewAlias(baseClient)
+	command := NewCmdRoot(ctx, index, detail, alias)
 	return command, nil
 }
 
