@@ -70,7 +70,18 @@ func (i indexImpl) Copy(ctx context.Context, srcIndex, destIndex string) error {
 		var srcExists bool
 		var destExists bool
 
+		zap.L().Debug(
+			"Already exists index",
+			zap.String("indicies", indices.String()),
+		)
+		// TODO Add test
 		for _, index := range indices {
+			zap.L().Debug(
+				"Checking",
+				zap.String("source index", srcIndex),
+				zap.String("destination index", destIndex),
+				zap.String("checking index", index.String()),
+			)
 			if index.String() == srcIndex {
 				srcExists = true
 			}
@@ -79,10 +90,10 @@ func (i indexImpl) Copy(ctx context.Context, srcIndex, destIndex string) error {
 			}
 		}
 
-		if srcExists {
+		if !srcExists {
 			return fail.Wrap(fail.New("Source index is not found"), fail.WithParam("index", srcIndex))
 		}
-		if destExists {
+		if !destExists {
 			return fail.Wrap(fail.New("Destination index is not found"), fail.WithParam("index", destIndex))
 		}
 	}
