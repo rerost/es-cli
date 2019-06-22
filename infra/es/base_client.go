@@ -177,7 +177,7 @@ func (client baseClientImp) httpRequest(ctx context.Context, method string, url 
 	{
 		zap.L().Debug(
 			"request",
-			zap.String("request body", body),
+			zap.String("curl", http2curl.GetCurlCommand(request)),
 		)
 	}
 	response, err := client.HttpClient.Do(request)
