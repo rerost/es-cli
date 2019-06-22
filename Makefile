@@ -1,3 +1,5 @@
+SHELL=/bin/bash -o pipefail
+
 $(eval RELEASE_TAG := $(shell cat version.json | jq ".version" --raw-output))
 
 PHONY: .all
