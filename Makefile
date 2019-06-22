@@ -1,3 +1,6 @@
+SHELL=/bin/bash -o pipefail
+
+GO_COVER_ARGS := -coverpkg ./... -coverprofile coverage.txt -covermode atomic
 $(eval RELEASE_TAG := $(shell cat version.json | jq ".version" --raw-output))
 
 PHONY: .all
@@ -14,7 +17,7 @@ generate:
 
 PHONY: go-test
 go-test: vendor
-	go test -v ./... | gex cgt
+	go test -v ${GO_COVER_ARGS} ./... | gex cgt
 
 PHONY: e2e-test
 e2e-test: build 

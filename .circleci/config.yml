@@ -24,6 +24,7 @@ jobs:
       - checkout
       - setup_remote_docker
       - run: make test
+      - run: bash <(curl -s https://codecov.io/bash)
     environment:
       GO111MODULE: "on"
   release:
@@ -48,6 +49,7 @@ workflows:
     jobs:
       - build
       - test:
+          context: codecov-es-cli
           requires:
             - build
       - release:
