@@ -11,6 +11,7 @@ import (
 	"github.com/rerost/es-cli/cmd/dump"
 	"github.com/rerost/es-cli/cmd/get"
 	"github.com/rerost/es-cli/cmd/list"
+	"github.com/rerost/es-cli/cmd/remove"
 	"github.com/rerost/es-cli/cmd/restore"
 	"github.com/rerost/es-cli/cmd/update"
 	"github.com/rerost/es-cli/domain"
@@ -39,6 +40,7 @@ func NewCmdRoot(
 		restore.NewRestoreCommand(ctx, ind),
 		get.NewGetCommand(ctx, dtl),
 		update.NewUpdateCommand(ctx, dtl),
+		remove.NewRemoveCommand(ctx, alis),
 	)
 
 	return cmd

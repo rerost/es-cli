@@ -30,7 +30,7 @@ func (a aliasImpl) Add(ctx context.Context, aliasName string, indexNames ...stri
 }
 
 func (a aliasImpl) Remove(ctx context.Context, aliasName string, indexNames ...string) error {
-	err := a.esBaseClient.RemoveAlias(ctx, aliasName)
+	err := a.esBaseClient.RemoveAlias(ctx, aliasName, indexNames...)
 	return fail.Wrap(err)
 }
 
