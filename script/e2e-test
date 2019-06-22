@@ -3,7 +3,7 @@ set -eo pipefail
 
 function exec_only()
 {
-  cmd="go run main.go --host http://localhost:$1 "
+  cmd="go run main.go --host http://localhost:$1 --debug"
 
   ## Index
   echo "# list index"

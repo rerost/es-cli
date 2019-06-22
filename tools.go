@@ -6,6 +6,7 @@ package tools
 
 // tool dependencies
 import (
+	_ "github.com/google/wire/cmd/wire"
 	_ "github.com/izumin5210/cgt"
 	_ "github.com/tcnksm/ghr"
 )

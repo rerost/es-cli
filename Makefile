@@ -8,6 +8,10 @@ vendor:
 	go get github.com/izumin5210/gex/cmd/gex
 	go mod download
 
+PHONY: generate
+generate:
+	go generate ./...
+
 PHONY: go-test
 go-test: vendor
 	go test -v ./... | gex cgt

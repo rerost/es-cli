@@ -1,0 +1,3 @@
+#!/bin/bash
+
+eval "go run $GOPATH/src/github.com/rerost/es-cli/main.go $*"
