@@ -10,8 +10,8 @@ import (
 
 func NewAliasCommand(ctx context.Context, alis domain.Alias) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "index",
-		Short: "list up index",
+		Use:   "alias",
+		Short: "add alias",
 		Args:  cobra.MinimumNArgs(2),
 		RunE: func(_ *cobra.Command, args []string) error {
 			err := alis.Add(ctx, args[0], args[1:]...)

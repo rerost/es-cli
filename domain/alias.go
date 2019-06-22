@@ -25,7 +25,7 @@ type aliasImpl struct {
 }
 
 func (a aliasImpl) Add(ctx context.Context, aliasName string, indexNames ...string) error {
-	err := a.esBaseClient.AddAlias(ctx, aliasName)
+	err := a.esBaseClient.AddAlias(ctx, aliasName, indexNames...)
 	return fail.Wrap(err)
 }
 
