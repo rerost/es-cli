@@ -581,7 +581,6 @@ func (client baseClientImp) Ping(ctx context.Context) (Pong, error) {
 }
 
 func (client baseClientImp) baseURL() string {
-	zap.L().Debug("baseurl", zap.String("host", client.Config.Host))
 	return client.Config.Host
 }
 func (client baseClientImp) listIndexURL() string {

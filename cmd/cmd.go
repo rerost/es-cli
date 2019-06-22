@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/rerost/es-cli/config"
@@ -26,6 +27,13 @@ func Run() error {
 	defer l.Sync()
 
 	zap.ReplaceGlobals(l)
+
+	cfgJSON, err := json.Marshal(cfg)
+	if err != nil {
+		return fail.Wrap(err)
+	}
+	zap.L().Debug("config", zap.String("config", string(cfgJSON)))
+
 	cmd, err := InitializeCmd(ctx, cfg)
 	if err != nil {
 		return fail.Wrap(err)
