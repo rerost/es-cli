@@ -49,6 +49,8 @@ workflows:
     jobs:
       - build
       - test:
+          context:
+            context: codecov-es-cli
           requires:
             - build
       - release:
