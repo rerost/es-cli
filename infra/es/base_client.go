@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/moul/http2curl"
 	"github.com/rerost/es-cli/config"
 	"github.com/srvc/fail"
 	"go.uber.org/zap"
@@ -175,9 +176,16 @@ func (client baseClientImp) httpRequest(ctx context.Context, method string, url 
 
 	// Request log
 	{
+		c, err := http2curl.GetCurlCommand(request)
+		if err != nil {
+			zap.L().Debug(
+				"Failed to convert to curl",
+				zap.Error(err),
+			)
+		}
 		zap.L().Debug(
 			"request",
-			zap.String("curl", http2curl.GetCurlCommand(request)),
+			zap.String("curl", c.String()),
 		)
 	}
 	response, err := client.HttpClient.Do(request)
