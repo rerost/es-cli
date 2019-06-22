@@ -173,6 +173,13 @@ func (client baseClientImp) httpRequest(ctx context.Context, method string, url 
 		request.SetBasicAuth(client.Config.User, client.Config.Pass)
 	}
 
+	// Request log
+	{
+		zap.L().Debug(
+			"request",
+			zap.String("request body", body),
+		)
+	}
 	response, err := client.HttpClient.Do(request)
 	if err != nil {
 		return nil, fail.Wrap(err)
@@ -185,6 +192,15 @@ func (client baseClientImp) httpRequest(ctx context.Context, method string, url 
 		return nil, fail.Wrap(err)
 	}
 	defer response.Body.Close()
+
+	// Response log
+	{
+		zap.L().Debug(
+			"response",
+			zap.String("response status", string(response.Status)),
+			zap.String("response body", string(responseBody)),
+		)
+	}
 
 	if errMsg, ok := responseMap["error"]; ok {
 		return nil, fail.New(fmt.Sprintf("%v", errMsg))
