@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 
+	"github.com/rerost/es-cli/cmd/add"
 	"github.com/rerost/es-cli/cmd/copy"
 	"github.com/rerost/es-cli/cmd/count"
 	"github.com/rerost/es-cli/cmd/create"
@@ -28,6 +29,7 @@ func NewCmdRoot(
 	}
 
 	cmd.AddCommand(
+		add.NewAddCommand(ctx, ind, alis),
 		list.NewListCommand(ctx, ind, alis),
 		copy.NewCopyCommand(ctx, ind),
 		count.NewCountCommand(ctx, ind),
