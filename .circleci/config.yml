@@ -15,10 +15,10 @@ jobs:
   test:
     docker:
       - image: circleci/golang:1.12
-      - image: docker.elastic.co/elasticsearch/elasticsearch:6.2.0
+      - image: docker.elastic.co/elasticsearch/elasticsearch:6.8.0
         environment:
           http.host: '0.0.0.0'
-          http.port: 6200
+          http.port: 6800
     working_directory: /go/src/github.com/rerost/es-cli
     steps:
       - checkout
