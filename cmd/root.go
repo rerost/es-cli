@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"os"
 
 	"github.com/rerost/es-cli/cmd/add"
 	"github.com/rerost/es-cli/cmd/copy"
@@ -41,7 +42,28 @@ func NewCmdRoot(
 		get.NewGetCommand(ctx, dtl),
 		update.NewUpdateCommand(ctx, dtl),
 		remove.NewRemoveCommand(ctx, alis),
+		NewBashCmd(),
+		NewZshCmd(),
 	)
 
 	return cmd
+}
+func NewBashCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "bash",
+		Short: "Generates bash completion scripts",
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.GenBashCompletion(os.Stdout)
+		},
+	}
+}
+
+func NewZshCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "zsh",
+		Short: "Generates zsh completion scripts",
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.GenZshCompletion(os.Stdout)
+		},
+	}
 }
