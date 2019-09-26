@@ -42,27 +42,28 @@ func NewCmdRoot(
 		get.NewGetCommand(ctx, dtl),
 		update.NewUpdateCommand(ctx, dtl),
 		remove.NewRemoveCommand(ctx, alis),
+		NewBashCmd(),
+		NewZshCmd(),
 	)
 
-	cmdBash := &cobra.Command{
+	return cmd
+}
+func NewBashCmd() *cobra.Command {
+	return &cobra.Command{
 		Use:   "bash",
 		Short: "Generates bash completion scripts",
-		Run: func(_ *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, args []string) {
 			cmd.GenBashCompletion(os.Stdout)
 		},
 	}
-	cmdZsh := &cobra.Command{
+}
+
+func NewZshCmd() *cobra.Command {
+	return &cobra.Command{
 		Use:   "zsh",
 		Short: "Generates zsh completion scripts",
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.GenZshCompletion(os.Stdout)
 		},
 	}
-
-	cmd.AddCommand(
-		cmdBash,
-		cmdZsh,
-	)
-
-	return cmd
 }
