@@ -13,7 +13,7 @@ type Config struct {
 	User               string `json:"user"`
 	Pass               string `json:"pass"`
 	Insecure           bool   `json:"insecure"` // Use null.Bool for overwrite.
-	SetIncludeTypeName bool   `json:"set-include_type_name"`
+	SetIncludeTypeName bool   `json:"set-include-type-name" mapstructure:"set-include-type-name"`
 	Verbose            bool   `json:"verbose"`
 	Debug              bool   `json:"debug"`
 }
