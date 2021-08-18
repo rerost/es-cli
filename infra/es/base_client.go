@@ -245,7 +245,6 @@ func (client baseClientImp) ListIndex(ctx context.Context) (Indices, error) {
 }
 func (client baseClientImp) CreateIndex(ctx context.Context, indexName string, mappingJSON string) error {
 	params := map[string]string{}
-
 	if client.Config.SetIncludeTypeName {
 		params["include_type_name"] = "true"
 	}
