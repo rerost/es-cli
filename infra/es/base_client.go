@@ -170,6 +170,10 @@ func (client baseClientImp) httpRequest(ctx context.Context, method string, url 
 		request = addParams(request, params)
 	}
 
+	if client.Config.SetIncludeTypeName {
+		request = addParams(request, map[string]string{"include_type_name": "true"})
+	}
+
 	if client.Config.User != "" && client.Config.Pass != "" {
 		request.SetBasicAuth(client.Config.User, client.Config.Pass)
 	}

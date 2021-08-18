@@ -53,6 +53,7 @@ func NewConfig() (config.Config, error) {
 	pflag.StringP("pass", "p", "", "ES basic auth password")
 	pflag.BoolP("insecure", "k", false, "Same as curl insecure")
 	pflag.StringP("namespace", "n", "localhost", "Specify config in es-cli") // For conf. Think alter position
+	pflag.Bool("set-include_type_name", false, `Set the API parameter "include_type_name" when creating or updating a index`)
 
 	pflag.BoolP("verbose", "v", false, "")
 	pflag.BoolP("debug", "d", false, "")
