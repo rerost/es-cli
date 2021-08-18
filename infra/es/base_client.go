@@ -170,10 +170,6 @@ func (client baseClientImp) httpRequest(ctx context.Context, method string, url 
 		request = addParams(request, params)
 	}
 
-	if client.Config.SetIncludeTypeName {
-		request = addParams(request, map[string]string{"include_type_name": "true"})
-	}
-
 	if client.Config.User != "" && client.Config.Pass != "" {
 		request.SetBasicAuth(client.Config.User, client.Config.Pass)
 	}
@@ -248,7 +244,13 @@ func (client baseClientImp) ListIndex(ctx context.Context) (Indices, error) {
 	return indices, nil
 }
 func (client baseClientImp) CreateIndex(ctx context.Context, indexName string, mappingJSON string) error {
-	responseBody, err := client.httpRequest(ctx, http.MethodPut, client.rawIndexURL(indexName), mappingJSON, "application/json", nil)
+	params := map[string]string{}
+
+	if client.Config.SetIncludeTypeName {
+		params["include_type_name"] = "true"
+	}
+
+	responseBody, err := client.httpRequest(ctx, http.MethodPut, client.rawIndexURL(indexName), mappingJSON, "application/json", params)
 	if err != nil {
 		return fail.Wrap(err)
 	}
