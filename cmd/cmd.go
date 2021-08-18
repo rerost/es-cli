@@ -52,8 +52,8 @@ func NewConfig() (config.Config, error) {
 	pflag.StringP("user", "u", "", "ES basic auth user")
 	pflag.StringP("pass", "p", "", "ES basic auth password")
 	pflag.BoolP("insecure", "k", false, "Same as curl insecure")
-	pflag.StringP("namespace", "n", "localhost", "Specify config in es-cli")                                                  // For conf. Think alter position
-	pflag.Bool("set-include-type-name", false, `Set the API parameter "include_type_name" when creating or updating a index`) // ref. https://www.elastic.co/guide/en/elasticsearch/reference/7.x/removal-of-types.html
+	pflag.StringP("namespace", "n", "localhost", "Specify config in es-cli")                                       // For conf. Think alter position
+	pflag.Bool("set-include-type-name", false, `Set the API parameter "include_type_name" when creating an index`) // ref. https://www.elastic.co/guide/en/elasticsearch/reference/7.x/removal-of-types.html
 
 	pflag.BoolP("verbose", "v", false, "")
 	pflag.BoolP("debug", "d", false, "")
