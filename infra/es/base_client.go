@@ -244,9 +244,9 @@ func (client baseClientImp) ListIndex(ctx context.Context) (Indices, error) {
 	return indices, nil
 }
 func (client baseClientImp) CreateIndex(ctx context.Context, indexName string, mappingJSON string) error {
-	params := map[string]string{}
+	var params map[string]string
 	if client.Config.SetIncludeTypeName {
-		params["include_type_name"] = "true"
+		params = map[string]string{"include_type_name": "true"}
 	}
 
 	responseBody, err := client.httpRequest(ctx, http.MethodPut, client.rawIndexURL(indexName), mappingJSON, "application/json", params)
