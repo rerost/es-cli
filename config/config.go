@@ -8,13 +8,14 @@ import (
 )
 
 type Config struct {
-	Host     string `json:"host"`
-	Type     string `json:"type"`
-	User     string `json:"user"`
-	Pass     string `json:"pass"`
-	Insecure bool   `json:"insecure"` // Use null.Bool for overwrite.
-	Verbose  bool   `json:"verbose"`
-	Debug    bool   `json:"debug"`
+	Host               string `json:"host"`
+	Type               string `json:"type"`
+	User               string `json:"user"`
+	Pass               string `json:"pass"`
+	Insecure           bool   `json:"insecure"` // Use null.Bool for overwrite.
+	SetIncludeTypeName bool   `json:"set-include-type-name" mapstructure:"set-include-type-name"`
+	Verbose            bool   `json:"verbose"`
+	Debug              bool   `json:"debug"`
 }
 
 func DefaultConfig() Config {
@@ -78,6 +79,9 @@ func Overwrite(cfgOrg, cfgOverwrite Config) Config {
 	}
 	if i := cfgOverwrite.Insecure; i {
 		cfgDst.Insecure = i
+	}
+	if s := cfgOverwrite.SetIncludeTypeName; s {
+		cfgDst.SetIncludeTypeName = s
 	}
 
 	return cfgDst
